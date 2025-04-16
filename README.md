@@ -1,73 +1,72 @@
-# Welcome to your Lovable project
+# Step-by-Step Signup Form with Next.js
 
-## Project info
+A multi-step signup form built with Next.js and TypeScript, featuring a clean and user-friendly interface.
 
-**URL**: https://lovable.dev/projects/d63ef463-ff1d-4e4c-b873-14f9d919568c
+## Features
 
-## How can I edit this code?
+- Multi-step form with progress tracking
+- Form state management using React Context
+- Form validation
+- Data persistence across steps
+- Responsive design
+- Profile picture upload
+- Summary page with editable sections
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/d63ef463-ff1d-4e4c-b873-14f9d919568c) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
+- Next.js
 - TypeScript
-- React
-- shadcn-ui
+- React Context API
+- TanStack Query (React Query)
+- Shadcn UI components
 - Tailwind CSS
 
-## How can I deploy this project?
+## Getting Started
 
-Simply open [Lovable](https://lovable.dev/projects/d63ef463-ff1d-4e4c-b873-14f9d919568c) and click on Share -> Publish.
+First, install the dependencies:
 
-## Can I connect a custom domain to my Lovable project?
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
 
-Yes, you can!
+Then, run the development server:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+├── context/        # React Context for state management
+├── hooks/          # Custom React hooks
+├── lib/            # Utility functions
+├── pages/          # Next.js pages
+│   ├── index.tsx            # Home page
+│   ├── personal-information.tsx  # Step 1
+│   ├── current-status.tsx        # Step 2
+│   ├── preferences.tsx           # Step 3
+│   ├── profile-picture.tsx       # Step 4
+│   └── overview.tsx              # Final step
+└── styles/         # Global styles
+```
+
+## Form Steps
+
+1. **Personal Information**: Basic user details
+2. **Current Status**: Academic and professional status
+3. **Preferences**: Career preferences and interests
+4. **Profile Picture**: Upload profile photo
+5. **Overview**: Review all information and submit

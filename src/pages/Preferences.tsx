@@ -1,253 +1,208 @@
-
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
 import { useFormData } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Search } from "lucide-react";
 
-// Define data
-const sectors = [
-  "Healthcare & Pharmaceuticals",
-  "Education & Research",
-  "Technology",
-  "Finance",
-  "Manufacturing",
-  "Retail",
-  "Energy",
-  "Transportation"
-];
-
-const roles = [
-  "Doctor/Physician",
-  "Researcher",
-  "Software Engineer",
-  "Data Scientist",
-  "Product Manager",
-  "Business Analyst",
-  "Marketing Manager"
-];
-
-const states = [
-  "Johor",
-  "Kedah",
-  "Kelantan",
-  "Melaka",
-  "Negeri Sembilan",
-  "Pahang",
-  "Penang",
-  "Perak",
-  "Perlis",
-  "Sabah",
-  "Sarawak",
-  "Selangor",
-  "Terengganu",
-  "Kuala Lumpur",
-  "Labuan",
-  "Putrajaya"
-];
-
-const Preferences = () => {
-  const navigate = useNavigate();
+export default function Preferences() {
+  const router = useRouter();
   const { formData, updatePreferences, nextStep, prevStep } = useFormData();
-  
-  const [sectorSearch, setSectorSearch] = useState("");
-  const [roleSearch, setRoleSearch] = useState("");
-  const [stateSearch, setStateSearch] = useState("");
 
-  const [selectedSectors, setSelectedSectors] = useState<string[]>(formData.preferences.sectors || []);
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(formData.preferences.roles || []);
-  const [selectedStates, setSelectedStates] = useState<string[]>(formData.preferences.states || []);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    nextStep();
+    router.push("/profile-picture");
+  };
 
-  const filteredSectors = sectors.filter(sector => 
-    sector.toLowerCase().includes(sectorSearch.toLowerCase())
-  );
-
-  const filteredRoles = roles.filter(role => 
-    role.toLowerCase().includes(roleSearch.toLowerCase())
-  );
-
-  const filteredStates = states.filter(state => 
-    state.toLowerCase().includes(stateSearch.toLowerCase())
-  );
+  const handleBack = () => {
+    prevStep();
+    router.push("/current-status");
+  };
 
   const toggleSector = (sector: string) => {
-    setSelectedSectors(prev => 
-      prev.includes(sector)
-        ? prev.filter(s => s !== sector)
-        : [...prev, sector]
-    );
+    const currentSectors = [...formData.preferences.sectors];
+    if (currentSectors.includes(sector)) {
+      updatePreferences({
+        sectors: currentSectors.filter((s) => s !== sector),
+      });
+    } else {
+      updatePreferences({
+        sectors: [...currentSectors, sector],
+      });
+    }
   };
 
   const toggleRole = (role: string) => {
-    if (selectedRoles.includes(role)) {
-      setSelectedRoles(prev => prev.filter(r => r !== role));
+    const currentRoles = [...formData.preferences.roles];
+    if (currentRoles.includes(role)) {
+      updatePreferences({
+        roles: currentRoles.filter((r) => r !== role),
+      });
     } else {
-      if (selectedRoles.length < 3) {
-        setSelectedRoles(prev => [...prev, role]);
-      }
+      updatePreferences({
+        roles: [...currentRoles, role],
+      });
     }
   };
 
   const toggleState = (state: string) => {
-    if (selectedStates.includes(state)) {
-      setSelectedStates(prev => prev.filter(s => s !== state));
+    const currentStates = [...formData.preferences.states];
+    if (currentStates.includes(state)) {
+      updatePreferences({
+        states: currentStates.filter((s) => s !== state),
+      });
     } else {
-      if (selectedStates.length < 3) {
-        setSelectedStates(prev => [...prev, state]);
-      }
+      updatePreferences({
+        states: [...currentStates, state],
+      });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updatePreferences({
-      sectors: selectedSectors,
-      roles: selectedRoles,
-      states: selectedStates
-    });
-    nextStep();
-    navigate("/profile-picture");
-  };
+  // Sectors data
+  const sectors = [
+    "Technology",
+    "Education",
+    "Healthcare",
+    "Finance & Banking",
+    "Manufacturing",
+    "Oil & Gas",
+    "Construction",
+    "Retail",
+    "Government",
+    "Telecommunications",
+    "Hospitality",
+    "Logistics & Transportation",
+  ];
+
+  // Roles data
+  const roles = [
+    "Software Development",
+    "Data Analytics",
+    "Project Management",
+    "Marketing",
+    "Sales",
+    "Customer Service",
+    "Human Resources",
+    "Finance & Accounting",
+    "Research & Development",
+    "Design",
+    "Operations",
+    "Consulting",
+  ];
+
+  // Malaysian states
+  const states = [
+    "Johor",
+    "Kedah",
+    "Kelantan",
+    "Melaka",
+    "Negeri Sembilan",
+    "Pahang",
+    "Perak",
+    "Perlis",
+    "Pulau Pinang",
+    "Sabah",
+    "Sarawak",
+    "Selangor",
+    "Terengganu",
+    "Kuala Lumpur",
+    "Labuan",
+    "Putrajaya",
+  ];
 
   return (
-    <FormLayout 
-      title="Preferences" 
-      greeting="GREAT JOB!" 
-      description="Now, let's personalize your experience even further. Tell us about your preferences so we can tailor opportunities that suit your goals."
+    <FormLayout
+      title="Preferences"
+      description="Tell us about your career preferences to help us match you with the right opportunities."
     >
-      <form onSubmit={handleSubmit} className="space-y-10">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Sectors */}
         <div className="space-y-4">
-          <div>
-            <Label className="text-base">Please choose your <span className="text-indigo-600">interested sectors</span>.</Label>
-          </div>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search sector"
-              value={sectorSearch}
-              onChange={(e) => setSectorSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {filteredSectors.map((sector) => (
-              <Button
-                key={sector}
-                type="button"
-                variant={selectedSectors.includes(sector) ? "default" : "outline"}
-                onClick={() => toggleSector(sector)}
-                className="rounded-full h-auto py-1.5"
-              >
-                {sector}
-              </Button>
+          <h3 className="text-lg font-medium">Sectors of Interest</h3>
+          <p className="text-sm text-gray-500">Select the sectors you are interested in working in.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {sectors.map((sector) => (
+              <div key={sector} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`sector-${sector}`}
+                  checked={formData.preferences.sectors.includes(sector)}
+                  onCheckedChange={() => toggleSector(sector)}
+                />
+                <Label
+                  htmlFor={`sector-${sector}`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {sector}
+                </Label>
+              </div>
             ))}
           </div>
         </div>
 
         {/* Roles */}
         <div className="space-y-4">
-          <div>
-            <Label className="text-base">Please choose 3 of your <span className="text-indigo-600">interested roles</span>.</Label>
-          </div>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search role"
-              value={roleSearch}
-              onChange={(e) => setRoleSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {filteredRoles.map((role) => (
-              <Button
-                key={role}
-                type="button"
-                variant={selectedRoles.includes(role) ? "default" : "outline"}
-                onClick={() => toggleRole(role)}
-                disabled={!selectedRoles.includes(role) && selectedRoles.length >= 3}
-                className="rounded-full h-auto py-1.5"
-              >
-                {role}
-              </Button>
+          <h3 className="text-lg font-medium">Roles of Interest</h3>
+          <p className="text-sm text-gray-500">Select the roles you are interested in.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {roles.map((role) => (
+              <div key={role} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`role-${role}`}
+                  checked={formData.preferences.roles.includes(role)}
+                  onCheckedChange={() => toggleRole(role)}
+                />
+                <Label
+                  htmlFor={`role-${role}`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {role}
+                </Label>
+              </div>
             ))}
           </div>
         </div>
 
         {/* States */}
         <div className="space-y-4">
-          <div>
-            <Label className="text-base">Please choose 3 of your <span className="text-indigo-600">preferred states</span>.</Label>
-          </div>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search state"
-              value={stateSearch}
-              onChange={(e) => setStateSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {filteredStates.map((state) => (
-              <Button
-                key={state}
-                type="button"
-                variant={selectedStates.includes(state) ? "default" : "outline"}
-                onClick={() => toggleState(state)}
-                disabled={!selectedStates.includes(state) && selectedStates.length >= 3}
-                className="rounded-full h-auto py-1.5"
-              >
-                {state}
-              </Button>
+          <h3 className="text-lg font-medium">Preferred Locations</h3>
+          <p className="text-sm text-gray-500">Select the states you are willing to work in.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {states.map((state) => (
+              <div key={state} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`state-${state}`}
+                  checked={formData.preferences.states.includes(state)}
+                  onCheckedChange={() => toggleState(state)}
+                />
+                <Label
+                  htmlFor={`state-${state}`}
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  {state}
+                </Label>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="pt-4 flex justify-between">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => {
-              prevStep();
-              navigate("/current-status");
-            }}
+        <div className="flex gap-3 pt-4">
+          <Button
+            type="button"
+            onClick={handleBack}
+            className="flex-1"
           >
             Back
           </Button>
-          <div className="space-x-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => {
-                updatePreferences({
-                  sectors: selectedSectors,
-                  roles: selectedRoles,
-                  states: selectedStates
-                });
-                nextStep();
-                navigate("/profile-picture");
-              }}
-            >
-              Skip
-            </Button>
-            <Button type="submit">Next</Button>
-          </div>
+          <Button
+            type="submit"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+          >
+            Next Step
+          </Button>
         </div>
       </form>
     </FormLayout>
   );
-};
-
-export default Preferences;
+} 

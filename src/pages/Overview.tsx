@@ -1,232 +1,282 @@
-
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
 import { useFormData } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  User, Briefcase, Heart, Check, ChevronRight 
-} from "lucide-react";
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle,
+  CardDescription,
+  CardFooter
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+import { Check, Pencil, UserIcon } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
-const Overview = () => {
-  const navigate = useNavigate();
-  const { formData, completeForm } = useFormData();
+export default function Overview() {
+  const router = useRouter();
+  const { formData, prevStep, completeForm } = useFormData();
+  const { toast } = useToast();
+
+  const handleBack = () => {
+    prevStep();
+    router.push("/profile-picture");
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // In a real application, you would submit the form data to your backend here
+    // For this example, we'll just show a success toast and complete the form
+    completeForm();
+    
+    toast({
+      title: "Registration completed!",
+      description: "Your profile has been successfully submitted.",
+    });
+    
+    // Redirect to the home page after a short delay
+    setTimeout(() => {
+      router.push("/");
+    }, 1500);
+  };
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "Not specified";
+    try {
+      return format(new Date(dateString), "dd MMMM yyyy");
+    } catch (error) {
+      return "Invalid date";
+    }
+  };
 
   return (
-    <FormLayout 
-      title="Registration Complete!" 
-      greeting="CONGRATULATIONS!" 
-      description="You've successfully completed your profile setup. Here's a summary of your information."
+    <FormLayout
+      title="Overview"
+      description="Review your information before submitting."
     >
-      <div className="space-y-6">
-        {/* Profile Picture and Name */}
-        <div className="flex flex-col items-center space-y-4 mb-8">
-          <Avatar className="h-24 w-24 border-2 border-gray-200">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Profile Summary */}
+        <div className="flex items-center space-x-4">
+          <div className="h-20 w-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
             {formData.profilePicture.image ? (
-              <AvatarImage src={formData.profilePicture.image} alt="Profile" />
+              <img
+                src={formData.profilePicture.image}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <AvatarFallback className="bg-gray-100 text-gray-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-12 h-12"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-              </AvatarFallback>
+              <UserIcon className="h-10 w-10 text-gray-400" />
             )}
-          </Avatar>
-          <h2 className="text-2xl font-bold">
-            {formData.personalInfo.displayName || formData.personalInfo.fullName || "User"}
-          </h2>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">{formData.personalInfo.fullName}</h2>
+            <p className="text-gray-500">{formData.personalInfo.email}</p>
+          </div>
         </div>
 
-        {/* Personal Information Card */}
+        <Separator />
+
+        {/* Personal Information */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center">
-              <User className="mr-2 h-5 w-5" />
-              Personal Information
-            </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate("/personal-information")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">Personal Information</CardTitle>
+              <Button 
+                onClick={() => router.push("/personal-information")}
+                className="flex items-center gap-1"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-sm text-gray-500">Full Name</p>
-              <p>{formData.personalInfo.fullName || "Not provided"}</p>
+              <p className="text-gray-500">Identification</p>
+              <p>{formData.personalInfo.identificationType === "malaysianIC" ? "Malaysian IC" : "Passport"}: {formData.personalInfo.identificationNumber}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Gender</p>
+              <p className="text-gray-500">Gender</p>
               <p>{formData.personalInfo.gender === "male" ? "Male" : "Female"}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Nationality</p>
-              <p>{formData.personalInfo.nationality === "malaysian" ? "Malaysian" : "Non-Malaysian"}</p>
+              <p className="text-gray-500">Date of Birth</p>
+              <p>{formatDate(formData.personalInfo.dateOfBirth)}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Email</p>
-              <p>{formData.personalInfo.email || "Not provided"}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Phone Number</p>
+              <p className="text-gray-500">Phone Number</p>
               <p>{formData.personalInfo.phoneNumber || "Not provided"}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Location</p>
+              <p className="text-gray-500">Nationality</p>
+              <p>{formData.personalInfo.nationality === "malaysian" ? "Malaysian" : "Non-Malaysian"}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Race</p>
+              <p>{formData.personalInfo.race || "Not specified"}</p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-gray-500">Address</p>
               <p>
                 {[
-                  formData.personalInfo.city, 
+                  formData.personalInfo.city,
                   formData.personalInfo.state,
+                  formData.personalInfo.postcode,
                   formData.personalInfo.country
-                ].filter(Boolean).join(", ") || "Not provided"}
+                ].filter(Boolean).join(", ")}
               </p>
+            </div>
+            <div>
+              <p className="text-gray-500">OKU Status</p>
+              <p>{formData.personalInfo.isOKU ? "Yes" : "No"}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Current Status Card */}
+        {/* Current Status */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center">
-              <Briefcase className="mr-2 h-5 w-5" />
-              Current Status
-            </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate("/current-status")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">Academic Status</CardTitle>
+              <Button 
+                onClick={() => router.push("/current-status")}
+                className="flex items-center gap-1"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-sm text-gray-500">Academic Qualification</p>
-              <p>{formData.currentStatus.academicQualification || "Not provided"}</p>
+              <p className="text-gray-500">Scholarship Type</p>
+              <p>{formData.currentStatus.scholarshipType === "scholarship" ? "Scholarship" : "Self-Funded"}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Institution Type</p>
+              <p className="text-gray-500">Academic Qualification</p>
+              <p>{formData.currentStatus.academicQualification || "Not specified"}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Institution Type</p>
+              <p>{formData.currentStatus.institutionType === "malaysia" ? "Malaysia" : "Abroad"}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Scope of Study</p>
+              <p>{formData.currentStatus.scopeOfStudy || "Not specified"}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Enrollment Date</p>
+              <p>{formatDate(formData.currentStatus.enrollmentDate)}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Graduation Date</p>
+              <p>{formatDate(formData.currentStatus.graduationDate)}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Current Year</p>
+              <p>{formData.currentStatus.currentYear || "Not specified"}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Grade</p>
               <p>
-                {formData.currentStatus.institutionType === "malaysia" 
-                  ? "Studying in Malaysia" 
-                  : "Studying abroad"}
+                {formData.currentStatus.gradeType !== "none"
+                  ? `${formData.currentStatus.gradeType.toUpperCase()}: ${formData.currentStatus.grade}`
+                  : "Not applicable"}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Scope of Study</p>
-              <p>{formData.currentStatus.scopeOfStudy || "Not provided"}</p>
+              <p className="text-gray-500">English Test</p>
+              <p>{formData.currentStatus.englishTest !== "none" 
+                ? formData.currentStatus.englishTest.toUpperCase() 
+                : "None"}
+              </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Study Year</p>
-              <p>Year {formData.currentStatus.currentYear || "Not provided"}</p>
-            </div>
-            {formData.currentStatus.gradeType !== "none" && (
-              <div>
-                <p className="text-sm text-gray-500">
-                  {formData.currentStatus.gradeType === "cgpa" 
-                    ? "CGPA" 
-                    : formData.currentStatus.gradeType === "grade" 
-                      ? "Grade" 
-                      : "Other"}
-                </p>
-                <p>{formData.currentStatus.grade || "Not provided"}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {/* Preferences Card */}
+        {/* Preferences */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium flex items-center">
-              <Heart className="mr-2 h-5 w-5" />
-              Preferences
-            </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate("/preferences")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">Career Preferences</CardTitle>
+              <Button 
+                onClick={() => router.push("/preferences")}
+                className="flex items-center gap-1"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="pt-4 space-y-4">
-            {formData.preferences.sectors.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500 mb-2">Interested Sectors</p>
-                <div className="flex flex-wrap gap-2">
-                  {formData.preferences.sectors.map((sector) => (
-                    <div key={sector} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm">
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-gray-500 mb-2">Sectors of Interest</p>
+              <div className="flex flex-wrap gap-2">
+                {formData.preferences.sectors.length > 0 ? (
+                  formData.preferences.sectors.map((sector) => (
+                    <Badge key={sector} className="bg-gray-100 text-gray-800">
                       {sector}
-                    </div>
-                  ))}
-                </div>
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400">No sectors selected</p>
+                )}
               </div>
-            )}
+            </div>
             
-            {formData.preferences.roles.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500 mb-2">Interested Roles</p>
-                <div className="flex flex-wrap gap-2">
-                  {formData.preferences.roles.map((role) => (
-                    <div key={role} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm">
+            <div>
+              <p className="text-gray-500 mb-2">Roles of Interest</p>
+              <div className="flex flex-wrap gap-2">
+                {formData.preferences.roles.length > 0 ? (
+                  formData.preferences.roles.map((role) => (
+                    <Badge key={role} className="bg-gray-100 text-gray-800">
                       {role}
-                    </div>
-                  ))}
-                </div>
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400">No roles selected</p>
+                )}
               </div>
-            )}
+            </div>
             
-            {formData.preferences.states.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500 mb-2">Preferred States</p>
-                <div className="flex flex-wrap gap-2">
-                  {formData.preferences.states.map((state) => (
-                    <div key={state} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm">
+            <div>
+              <p className="text-gray-500 mb-2">Preferred Locations</p>
+              <div className="flex flex-wrap gap-2">
+                {formData.preferences.states.length > 0 ? (
+                  formData.preferences.states.map((state) => (
+                    <Badge key={state} className="bg-gray-100 text-gray-800">
                       {state}
-                    </div>
-                  ))}
-                </div>
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-400">No locations selected</p>
+                )}
               </div>
-            )}
-
-            {formData.preferences.sectors.length === 0 && 
-             formData.preferences.roles.length === 0 && 
-             formData.preferences.states.length === 0 && (
-              <p className="text-gray-500">No preferences provided</p>
-            )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Complete button */}
-        <div className="pt-8 flex justify-center">
+        <div className="flex gap-3 pt-4">
           <Button
-            onClick={() => {
-              completeForm();
-              navigate("/");
-            }}
-            className="w-full md:w-auto"
+            type="button"
+            onClick={handleBack}
+            className="flex-1"
           >
-            <Check className="mr-2 h-4 w-4" /> Complete Registration
+            Back
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+          >
+            <Check className="mr-2 h-4 w-4" /> Submit Application
           </Button>
         </div>
-      </div>
+      </form>
     </FormLayout>
   );
-};
-
-export default Overview;
+} 

@@ -1,6 +1,5 @@
-
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
 import { useFormData } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,8 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const PersonalInformation = () => {
-  const navigate = useNavigate();
+export default function PersonalInformation() {
+  const router = useRouter();
   const { formData, updatePersonalInfo, nextStep } = useFormData();
   const [date, setDate] = React.useState<Date | undefined>(
     formData.personalInfo.dateOfBirth 
@@ -36,7 +35,7 @@ const PersonalInformation = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     nextStep();
-    navigate("/current-status");
+    router.push("/current-status");
   };
 
   const handleDateChange = (selectedDate: Date | undefined) => {
@@ -204,7 +203,7 @@ const PersonalInformation = () => {
             onValueChange={(value) => updatePersonalInfo({ race: value })}
           >
             <SelectTrigger id="race">
-              <SelectValue placeholder="Select Race" />
+              <SelectValue placeholder="Select your race" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="malay">Malay</SelectItem>
@@ -215,79 +214,79 @@ const PersonalInformation = () => {
           </Select>
         </div>
 
-        {/* Location */}
-        <div className="space-y-2">
-          <Label>Where do you stay?</Label>
-          <Select
-            value={formData.personalInfo.country}
-            onValueChange={(value) => updatePersonalInfo({ country: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Country" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="malaysia">Malaysia</SelectItem>
-              <SelectItem value="singapore">Singapore</SelectItem>
-              <SelectItem value="indonesia">Indonesia</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* State and City */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Address */}
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="state">State</Label>
+            <Label htmlFor="country">Country</Label>
             <Select
-              value={formData.personalInfo.state}
-              onValueChange={(value) => updatePersonalInfo({ state: value })}
+              value={formData.personalInfo.country}
+              onValueChange={(value) => updatePersonalInfo({ country: value })}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select State" />
+              <SelectTrigger id="country">
+                <SelectValue placeholder="Select your country" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="johor">Johor</SelectItem>
-                <SelectItem value="kedah">Kedah</SelectItem>
-                <SelectItem value="kelantan">Kelantan</SelectItem>
-                <SelectItem value="melaka">Melaka</SelectItem>
-                <SelectItem value="negeri-sembilan">Negeri Sembilan</SelectItem>
-                <SelectItem value="pahang">Pahang</SelectItem>
-                <SelectItem value="penang">Penang</SelectItem>
-                <SelectItem value="perak">Perak</SelectItem>
-                <SelectItem value="perlis">Perlis</SelectItem>
-                <SelectItem value="sabah">Sabah</SelectItem>
-                <SelectItem value="sarawak">Sarawak</SelectItem>
-                <SelectItem value="selangor">Selangor</SelectItem>
-                <SelectItem value="terengganu">Terengganu</SelectItem>
-                <SelectItem value="kuala-lumpur">Kuala Lumpur</SelectItem>
-                <SelectItem value="labuan">Labuan</SelectItem>
-                <SelectItem value="putrajaya">Putrajaya</SelectItem>
+                <SelectItem value="malaysia">Malaysia</SelectItem>
+                <SelectItem value="singapore">Singapore</SelectItem>
+                <SelectItem value="indonesia">Indonesia</SelectItem>
+                <SelectItem value="thailand">Thailand</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="state">State</Label>
+              <Select
+                value={formData.personalInfo.state}
+                onValueChange={(value) => updatePersonalInfo({ state: value })}
+              >
+                <SelectTrigger id="state">
+                  <SelectValue placeholder="Select your state" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="johor">Johor</SelectItem>
+                  <SelectItem value="kedah">Kedah</SelectItem>
+                  <SelectItem value="kelantan">Kelantan</SelectItem>
+                  <SelectItem value="melaka">Melaka</SelectItem>
+                  <SelectItem value="negeri-sembilan">Negeri Sembilan</SelectItem>
+                  <SelectItem value="pahang">Pahang</SelectItem>
+                  <SelectItem value="perak">Perak</SelectItem>
+                  <SelectItem value="perlis">Perlis</SelectItem>
+                  <SelectItem value="pulau-pinang">Pulau Pinang</SelectItem>
+                  <SelectItem value="sabah">Sabah</SelectItem>
+                  <SelectItem value="sarawak">Sarawak</SelectItem>
+                  <SelectItem value="selangor">Selangor</SelectItem>
+                  <SelectItem value="terengganu">Terengganu</SelectItem>
+                  <SelectItem value="kuala-lumpur">Kuala Lumpur</SelectItem>
+                  <SelectItem value="labuan">Labuan</SelectItem>
+                  <SelectItem value="putrajaya">Putrajaya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={formData.personalInfo.city}
+                onChange={(e) => updatePersonalInfo({ city: e.target.value })}
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
+            <Label htmlFor="postcode">Postcode</Label>
             <Input
-              id="city"
-              value={formData.personalInfo.city}
-              onChange={(e) => updatePersonalInfo({ city: e.target.value })}
+              id="postcode"
+              value={formData.personalInfo.postcode}
+              onChange={(e) => updatePersonalInfo({ postcode: e.target.value })}
             />
           </div>
         </div>
 
-        {/* Postcode */}
-        <div className="w-1/2 space-y-2">
-          <Label htmlFor="postcode">Postcode</Label>
-          <Input
-            id="postcode"
-            value={formData.personalInfo.postcode}
-            onChange={(e) => updatePersonalInfo({ postcode: e.target.value })}
-          />
-        </div>
-
-        {/* OKU */}
         <div className="space-y-2">
-          <Label>Are you registered with Department of Social Welfare Malaysia as a person with Disabilities (OKU)?</Label>
+          <Label>Do you have an OKU card?</Label>
           <RadioGroup
             value={formData.personalInfo.isOKU ? "yes" : "no"}
             onValueChange={(value) => 
@@ -306,13 +305,12 @@ const PersonalInformation = () => {
           </RadioGroup>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="pt-4 flex justify-end">
-          <Button type="submit">Next</Button>
+        <div className="pt-4">
+          <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
+            Next Step
+          </Button>
         </div>
       </form>
     </FormLayout>
   );
-};
-
-export default PersonalInformation;
+} 

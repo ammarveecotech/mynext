@@ -1,6 +1,5 @@
-
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
 import { useFormData } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,8 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const CurrentStatus = () => {
-  const navigate = useNavigate();
+export default function CurrentStatus() {
+  const router = useRouter();
   const { formData, updateCurrentStatus, nextStep, prevStep } = useFormData();
   const [enrollmentDate, setEnrollmentDate] = React.useState<Date | undefined>(
     formData.currentStatus.enrollmentDate 
@@ -41,29 +40,47 @@ const CurrentStatus = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     nextStep();
-    navigate("/preferences");
+    router.push("/preferences");
+  };
+
+  const handleBack = () => {
+    prevStep();
+    router.push("/personal-information");
+  };
+
+  const handleEnrollmentDateChange = (selectedDate: Date | undefined) => {
+    setEnrollmentDate(selectedDate);
+    if (selectedDate) {
+      updateCurrentStatus({ enrollmentDate: selectedDate.toISOString() });
+    }
+  };
+
+  const handleGraduationDateChange = (selectedDate: Date | undefined) => {
+    setGraduationDate(selectedDate);
+    if (selectedDate) {
+      updateCurrentStatus({ graduationDate: selectedDate.toISOString() });
+    }
   };
 
   return (
-    <FormLayout 
-      title="Current Status Detail" 
-      greeting="Hi, bedump tan"
-      description="Let's keep building your profile together. We would like to hear more about you! Share some of your details before we get started."
+    <FormLayout
+      title="Current Status"
+      description="Tell us more about your academic journey and qualifications"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Scholarship Type */}
         <div className="space-y-2">
-          <Label>What's your scholarship type?</Label>
+          <Label>Scholarship Type</Label>
           <RadioGroup
             value={formData.currentStatus.scholarshipType}
             onValueChange={(value) => 
               updateCurrentStatus({ scholarshipType: value as "scholarship" | "selfFunded" })
             }
-            className="flex space-x-4"
+            className="flex flex-col space-y-2"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="scholarship" id="scholarship" />
-              <Label htmlFor="scholarship">Scholarship/Loan</Label>
+              <Label htmlFor="scholarship">Scholarship</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="selfFunded" id="self-funded" />
@@ -74,15 +91,16 @@ const CurrentStatus = () => {
 
         {/* Academic Qualification */}
         <div className="space-y-2">
-          <Label>What's your current academic qualification?</Label>
+          <Label htmlFor="academic-qualification">Academic Qualification</Label>
           <Select
             value={formData.currentStatus.academicQualification}
             onValueChange={(value) => updateCurrentStatus({ academicQualification: value })}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Academic Qualification" />
+            <SelectTrigger id="academic-qualification">
+              <SelectValue placeholder="Select your highest qualification" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="highSchool">High School</SelectItem>
               <SelectItem value="diploma">Diploma</SelectItem>
               <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
               <SelectItem value="master">Master's Degree</SelectItem>
@@ -94,7 +112,7 @@ const CurrentStatus = () => {
 
         {/* Institution Type */}
         <div className="space-y-2">
-          <Label>What's your institution type?</Label>
+          <Label>Institution Type</Label>
           <RadioGroup
             value={formData.currentStatus.institutionType}
             onValueChange={(value) => 
@@ -103,132 +121,107 @@ const CurrentStatus = () => {
             className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="malaysia" id="malaysia" />
-              <Label htmlFor="malaysia">I'm studying in Malaysia or on exchange programme</Label>
+              <RadioGroupItem value="malaysia" id="malaysia-institution" />
+              <Label htmlFor="malaysia-institution">Malaysia</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="abroad" id="abroad" />
-              <Label htmlFor="abroad">I'm studying abroad</Label>
+              <RadioGroupItem value="abroad" id="abroad-institution" />
+              <Label htmlFor="abroad-institution">Abroad</Label>
             </div>
           </RadioGroup>
         </div>
 
         {/* Scope of Study */}
         <div className="space-y-2">
-          <Label>What's your scope of study?</Label>
-          <Select
+          <Label htmlFor="scope-of-study">Scope of Study</Label>
+          <Input
+            id="scope-of-study"
             value={formData.currentStatus.scopeOfStudy}
-            onValueChange={(value) => updateCurrentStatus({ scopeOfStudy: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Scope of Study" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="business">Business & Management</SelectItem>
-              <SelectItem value="engineering">Engineering</SelectItem>
-              <SelectItem value="computer-science">Computer Science</SelectItem>
-              <SelectItem value="medicine">Medicine</SelectItem>
-              <SelectItem value="arts">Arts & Humanities</SelectItem>
-              <SelectItem value="science">Science</SelectItem>
-              <SelectItem value="law">Law</SelectItem>
-              <SelectItem value="education">Education</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={(e) => updateCurrentStatus({ scopeOfStudy: e.target.value })}
+            placeholder="e.g., Computer Science, Medicine, etc."
+          />
         </div>
 
         {/* Enrollment Date */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>When's your university enrollment date?</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !enrollmentDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {enrollmentDate ? format(enrollmentDate, "dd/MM/yyyy") : <span>dd/mm/yyyy</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={enrollmentDate}
-                  onSelect={(date) => {
-                    setEnrollmentDate(date);
-                    if (date) {
-                      updateCurrentStatus({ enrollmentDate: date.toISOString() });
-                    }
-                  }}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+        <div className="space-y-2">
+          <Label>Enrollment Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !enrollmentDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {enrollmentDate ? format(enrollmentDate, "dd/MM/yyyy") : <span>Select date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={enrollmentDate}
+                onSelect={handleEnrollmentDateChange}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
 
-          {/* Graduation Date */}
-          <div className="space-y-2">
-            <Label>When's your expected graduation date?</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !graduationDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {graduationDate ? format(graduationDate, "dd/MM/yyyy") : <span>dd/mm/yyyy</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={graduationDate}
-                  onSelect={(date) => {
-                    setGraduationDate(date);
-                    if (date) {
-                      updateCurrentStatus({ graduationDate: date.toISOString() });
-                    }
-                  }}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+        {/* Graduation Date */}
+        <div className="space-y-2">
+          <Label>Graduation Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !graduationDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {graduationDate ? format(graduationDate, "dd/MM/yyyy") : <span>Select date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={graduationDate}
+                onSelect={handleGraduationDateChange}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Current Year */}
         <div className="space-y-2">
-          <Label>What's the current year of your study?</Label>
+          <Label htmlFor="current-year">Current Year</Label>
           <Select
             value={formData.currentStatus.currentYear}
             onValueChange={(value) => updateCurrentStatus({ currentYear: value })}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Please select your current year" />
+            <SelectTrigger id="current-year">
+              <SelectValue placeholder="Select your current year" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Year 1</SelectItem>
-              <SelectItem value="2">Year 2</SelectItem>
-              <SelectItem value="3">Year 3</SelectItem>
-              <SelectItem value="4">Year 4</SelectItem>
-              <SelectItem value="5">Year 5</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="year1">Year 1</SelectItem>
+              <SelectItem value="year2">Year 2</SelectItem>
+              <SelectItem value="year3">Year 3</SelectItem>
+              <SelectItem value="year4">Year 4</SelectItem>
+              <SelectItem value="year5">Year 5</SelectItem>
+              <SelectItem value="graduated">Graduated</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Grade Type */}
         <div className="space-y-2">
-          <Label>What's your current grade</Label>
+          <Label>Grade Type</Label>
           <RadioGroup
             value={formData.currentStatus.gradeType}
             onValueChange={(value) => 
@@ -245,44 +238,38 @@ const CurrentStatus = () => {
               <Label htmlFor="grade">Grade</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="others" id="others" />
-              <Label htmlFor="others">Others</Label>
+              <RadioGroupItem value="others" id="others-grade" />
+              <Label htmlFor="others-grade">Others</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="no-grade" />
-              <Label htmlFor="no-grade">No Current Grade</Label>
+              <RadioGroupItem value="none" id="none-grade" />
+              <Label htmlFor="none-grade">None</Label>
             </div>
           </RadioGroup>
         </div>
 
-        {/* Grade Value */}
+        {/* Grade */}
         {formData.currentStatus.gradeType !== "none" && (
           <div className="space-y-2">
-            <Label htmlFor="grade">Enter your grade</Label>
+            <Label htmlFor="grade">Your {formData.currentStatus.gradeType === "cgpa" ? "CGPA" : "Grade"}</Label>
             <Input
               id="grade"
               value={formData.currentStatus.grade}
               onChange={(e) => updateCurrentStatus({ grade: e.target.value })}
-              placeholder={
-                formData.currentStatus.gradeType === "cgpa" 
-                  ? "E.g., 3.75"
-                  : formData.currentStatus.gradeType === "grade"
-                    ? "E.g., A, B+"
-                    : "E.g., First Class Honours"
-              }
+              placeholder={formData.currentStatus.gradeType === "cgpa" ? "e.g., 3.5" : "e.g., A, B+, etc."}
             />
           </div>
         )}
 
         {/* English Test */}
         <div className="space-y-2">
-          <Label>What's the english equivalency test you've taken?</Label>
+          <Label>English Test</Label>
           <RadioGroup
             value={formData.currentStatus.englishTest}
             onValueChange={(value) => 
               updateCurrentStatus({ englishTest: value as "muet" | "cefr" | "toefl" | "ielts" | "other" | "none" })
             }
-            className="grid grid-cols-2 gap-4"
+            className="flex flex-wrap gap-4"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="muet" id="muet" />
@@ -305,29 +292,29 @@ const CurrentStatus = () => {
               <Label htmlFor="other-test">Other</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="no-test" />
-              <Label htmlFor="no-test">I have not taken any tests</Label>
+              <RadioGroupItem value="none" id="none-test" />
+              <Label htmlFor="none-test">None</Label>
             </div>
           </RadioGroup>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="pt-4 flex justify-between">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => {
-              prevStep();
-              navigate("/personal-information");
-            }}
+        <div className="flex gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            className="flex-1"
           >
             Back
           </Button>
-          <Button type="submit">Next</Button>
+          <Button
+            type="submit"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+          >
+            Next Step
+          </Button>
         </div>
       </form>
     </FormLayout>
   );
-};
-
-export default CurrentStatus;
+} 
