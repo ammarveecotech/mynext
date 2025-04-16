@@ -1,6 +1,6 @@
-
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { cn } from "@/lib/utils";
 import { 
   User, Briefcase, Heart, Camera, FileText
@@ -9,14 +9,14 @@ import {
 interface SidebarItemProps {
   icon: React.ElementType;
   label: string;
-  to: string;
+  href: string;
   active: boolean;
 }
 
-const SidebarItem = ({ icon: Icon, label, to, active }: SidebarItemProps) => {
+const SidebarItem = ({ icon: Icon, label, href, active }: SidebarItemProps) => {
   return (
     <Link
-      to={to}
+      href={href}
       className={cn(
         "flex items-center space-x-3 py-3 px-4 rounded-md transition-colors",
         active
@@ -38,8 +38,8 @@ interface FormLayoutProps {
 }
 
 const FormLayout = ({ children, title, greeting, description }: FormLayoutProps) => {
-  const location = useLocation();
-  const currentPath = location.pathname;
+  const router = useRouter();
+  const currentPath = router.pathname;
 
   // Get username from local storage or set default
   const username = "bedump tan";
@@ -79,31 +79,31 @@ const FormLayout = ({ children, title, greeting, description }: FormLayoutProps)
           <SidebarItem
             icon={User}
             label="Personal Information"
-            to="/personal-information"
+            href="/personal-information"
             active={currentPath === "/personal-information"}
           />
           <SidebarItem
             icon={Briefcase}
             label="Current Status"
-            to="/current-status"
+            href="/current-status"
             active={currentPath === "/current-status"}
           />
           <SidebarItem
             icon={Heart}
             label="Preferences"
-            to="/preferences"
+            href="/preferences"
             active={currentPath === "/preferences"}
           />
           <SidebarItem
             icon={Camera}
             label="Profile Picture"
-            to="/profile-picture"
+            href="/profile-picture"
             active={currentPath === "/profile-picture"}
           />
           <SidebarItem
             icon={FileText}
             label="Overview"
-            to="/overview"
+            href="/overview"
             active={currentPath === "/overview"}
           />
         </nav>

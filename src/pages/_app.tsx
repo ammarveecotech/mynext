@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FormProvider } from "@/context/FormContext";
 import '@/styles/globals.css';
-import '@/App.css';
 import type { AppProps } from 'next/app';
 
 const queryClient = new QueryClient();
