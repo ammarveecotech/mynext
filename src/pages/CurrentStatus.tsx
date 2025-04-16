@@ -277,62 +277,38 @@ const CurrentStatus = () => {
         {/* English Test */}
         <div className="space-y-2">
           <Label>What's the english equivalency test you've taken?</Label>
-          <div className="grid grid-cols-2 gap-4">
+          <RadioGroup
+            value={formData.currentStatus.englishTest}
+            onValueChange={(value) => 
+              updateCurrentStatus({ englishTest: value as "muet" | "cefr" | "toefl" | "ielts" | "other" | "none" })
+            }
+            className="grid grid-cols-2 gap-4"
+          >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem 
-                value="muet" 
-                id="muet"
-                checked={formData.currentStatus.englishTest === "muet"}
-                onClick={() => updateCurrentStatus({ englishTest: "muet" })}
-              />
+              <RadioGroupItem value="muet" id="muet" />
               <Label htmlFor="muet">MUET</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem 
-                value="cefr" 
-                id="cefr" 
-                checked={formData.currentStatus.englishTest === "cefr"}
-                onClick={() => updateCurrentStatus({ englishTest: "cefr" })}
-              />
+              <RadioGroupItem value="cefr" id="cefr" />
               <Label htmlFor="cefr">CEFR</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem 
-                value="toefl" 
-                id="toefl" 
-                checked={formData.currentStatus.englishTest === "toefl"}
-                onClick={() => updateCurrentStatus({ englishTest: "toefl" })}
-              />
+              <RadioGroupItem value="toefl" id="toefl" />
               <Label htmlFor="toefl">TOEFL</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem 
-                value="ielts" 
-                id="ielts" 
-                checked={formData.currentStatus.englishTest === "ielts"}
-                onClick={() => updateCurrentStatus({ englishTest: "ielts" })}
-              />
+              <RadioGroupItem value="ielts" id="ielts" />
               <Label htmlFor="ielts">IELTS</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem 
-                value="other" 
-                id="other-test" 
-                checked={formData.currentStatus.englishTest === "other"}
-                onClick={() => updateCurrentStatus({ englishTest: "other" })}
-              />
+              <RadioGroupItem value="other" id="other-test" />
               <Label htmlFor="other-test">Other</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem 
-                value="none" 
-                id="no-test" 
-                checked={formData.currentStatus.englishTest === "none"}
-                onClick={() => updateCurrentStatus({ englishTest: "none" })}
-              />
+              <RadioGroupItem value="none" id="no-test" />
               <Label htmlFor="no-test">I have not taken any tests</Label>
             </div>
-          </div>
+          </RadioGroup>
         </div>
 
         {/* Navigation Buttons */}
