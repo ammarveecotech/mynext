@@ -13,15 +13,9 @@ export default function Preferences() {
   const { toast } = useToast();
   
   // Initialize state with data from form context
-  const [interestedSectors, setInterestedSectors] = useState<string[]>(
-    formData?.interestedSectors || []
-  );
-  const [interestedRoles, setInterestedRoles] = useState<string[]>(
-    formData?.interestedRoles || []
-  );
-  const [preferredStates, setPreferredStates] = useState<string[]>(
-    formData?.preferredStates || []
-  );
+  const [interestedSectors, setInterestedSectors] = useState(formData?.interestedSectors || []);
+  const [interestedRoles, setInterestedRoles] = useState(formData?.interestedRoles || []);
+  const [preferredStates, setPreferredStates] = useState(formData?.preferredStates || []);
   
   // Update state when form data changes
   useEffect(() => {

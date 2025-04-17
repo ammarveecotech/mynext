@@ -15,9 +15,7 @@ export default function Overview() {
   const { formData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
 
-  const handleBack = () => {
-    router.push("/profile-picture");
-  };
+  const handleBack = () => router.push("/profile-picture");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
