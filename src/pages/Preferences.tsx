@@ -1,63 +1,108 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
-import { useFormData } from "@/context/FormContext";
+import { useForm } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Preferences() {
   const router = useRouter();
-  const { formData, updatePreferences, nextStep, prevStep } = useFormData();
+  const { formData, updateFormData, saveStep, isSubmitting } = useForm();
+  const { toast } = useToast();
+  
+  // Initialize state with data from form context
+  const [interestedSectors, setInterestedSectors] = useState<string[]>(
+    formData?.interestedSectors || []
+  );
+  const [interestedRoles, setInterestedRoles] = useState<string[]>(
+    formData?.interestedRoles || []
+  );
+  const [preferredStates, setPreferredStates] = useState<string[]>(
+    formData?.preferredStates || []
+  );
+  
+  // Update state when form data changes
+  useEffect(() => {
+    if (formData) {
+      setInterestedSectors(formData.interestedSectors || []);
+      setInterestedRoles(formData.interestedRoles || []);
+      setPreferredStates(formData.preferredStates || []);
+    }
+  }, [formData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    nextStep();
-    router.push("/profile-picture");
+    
+    // Validate that at least one option is selected in each category
+    if (interestedSectors.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one sector of interest.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (interestedRoles.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one role of interest.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (preferredStates.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one preferred location.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Update the form context with local state
+    updateFormData({ 
+      interestedSectors,
+      interestedRoles,
+      preferredStates
+    });
+    
+    // Save and proceed to next step
+    const success = await saveStep('preferences');
+    if (success) {
+      router.push("/profile-picture");
+    }
   };
 
   const handleBack = () => {
-    prevStep();
     router.push("/current-status");
   };
 
   const toggleSector = (sector: string) => {
-    const currentSectors = [...formData.preferences.sectors];
-    if (currentSectors.includes(sector)) {
-      updatePreferences({
-        sectors: currentSectors.filter((s) => s !== sector),
-      });
-    } else {
-      updatePreferences({
-        sectors: [...currentSectors, sector],
-      });
-    }
+    setInterestedSectors((current: string[]) => 
+      current.includes(sector) 
+        ? current.filter((s: string) => s !== sector) 
+        : [...current, sector]
+    );
   };
 
   const toggleRole = (role: string) => {
-    const currentRoles = [...formData.preferences.roles];
-    if (currentRoles.includes(role)) {
-      updatePreferences({
-        roles: currentRoles.filter((r) => r !== role),
-      });
-    } else {
-      updatePreferences({
-        roles: [...currentRoles, role],
-      });
-    }
+    setInterestedRoles((current: string[]) => 
+      current.includes(role) 
+        ? current.filter((r: string) => r !== role) 
+        : [...current, role]
+    );
   };
 
   const toggleState = (state: string) => {
-    const currentStates = [...formData.preferences.states];
-    if (currentStates.includes(state)) {
-      updatePreferences({
-        states: currentStates.filter((s) => s !== state),
-      });
-    } else {
-      updatePreferences({
-        states: [...currentStates, state],
-      });
-    }
+    setPreferredStates((current: string[]) => 
+      current.includes(state) 
+        ? current.filter((s: string) => s !== state) 
+        : [...current, state]
+    );
   };
 
   // Sectors data
@@ -127,7 +172,7 @@ export default function Preferences() {
               <div key={sector} className="flex items-center space-x-2">
                 <Checkbox
                   id={`sector-${sector}`}
-                  checked={formData.preferences.sectors.includes(sector)}
+                  checked={interestedSectors.includes(sector)}
                   onCheckedChange={() => toggleSector(sector)}
                 />
                 <Label
@@ -150,7 +195,7 @@ export default function Preferences() {
               <div key={role} className="flex items-center space-x-2">
                 <Checkbox
                   id={`role-${role}`}
-                  checked={formData.preferences.roles.includes(role)}
+                  checked={interestedRoles.includes(role)}
                   onCheckedChange={() => toggleRole(role)}
                 />
                 <Label
@@ -173,7 +218,7 @@ export default function Preferences() {
               <div key={state} className="flex items-center space-x-2">
                 <Checkbox
                   id={`state-${state}`}
-                  checked={formData.preferences.states.includes(state)}
+                  checked={preferredStates.includes(state)}
                   onCheckedChange={() => toggleState(state)}
                 />
                 <Label
@@ -187,19 +232,20 @@ export default function Preferences() {
           </div>
         </div>
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex justify-between pt-4">
           <Button
             type="button"
             onClick={handleBack}
-            className="flex-1"
+            variant="outline"
+            disabled={isSubmitting}
           >
             Back
           </Button>
           <Button
             type="submit"
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+            disabled={isSubmitting}
           >
-            Next Step
+            {isSubmitting ? 'Saving...' : 'Next'}
           </Button>
         </div>
       </form>

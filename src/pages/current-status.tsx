@@ -1,317 +1,421 @@
-import React from "react";
-import { useRouter } from "next/router";
-import FormLayout from "@/components/FormLayout";
-import { useFormData } from "@/context/FormContext";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from "@/components/ui/select";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import FormLayout from '@/components/FormLayout';
+import { useForm } from '@/context/FormContext';
+import { useToast } from '@/components/ui/use-toast';
+
+// Define the form state interface
+interface CurrentStatusFormState {
+  scholarshipType?: 'scholarshipLoan' | 'selfFunded';
+  academicQualification?: string;
+  institutionType?: 'malaysiaOrExchange' | 'abroad';
+  studyScope?: string;
+  enrollmentDate?: string;
+  expectedGraduationDate?: string;
+  currentYear?: string;
+  gradeType?: 'cgpa' | 'grade' | 'others' | 'noGrade';
+  gradeValue?: string;
+  englishTest?: 'muet' | 'cefr' | 'toefl' | 'ielts' | 'none' | 'other';
+  [key: string]: string | undefined;
+}
 
 export default function CurrentStatus() {
   const router = useRouter();
-  const { formData, updateCurrentStatus, nextStep, prevStep } = useFormData();
-  const [enrollmentDate, setEnrollmentDate] = React.useState<Date | undefined>(
-    formData.currentStatus.enrollmentDate 
-      ? new Date(formData.currentStatus.enrollmentDate) 
-      : undefined
-  );
-  const [graduationDate, setGraduationDate] = React.useState<Date | undefined>(
-    formData.currentStatus.graduationDate 
-      ? new Date(formData.currentStatus.graduationDate) 
-      : undefined
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const { formData, updateFormData, saveStep, isSubmitting } = useForm();
+  const { toast } = useToast();
+  
+  // Local form state with default values
+  const [formState, setFormState] = useState<CurrentStatusFormState>({
+    scholarshipType: formData?.scholarshipType || 'scholarshipLoan',
+    academicQualification: formData?.academicQualification || '',
+    institutionType: formData?.institutionType || 'malaysiaOrExchange',
+    studyScope: formData?.studyScope || '',
+    enrollmentDate: formData?.enrollmentDate || '',
+    expectedGraduationDate: formData?.expectedGraduationDate || '',
+    currentYear: formData?.currentYear || '',
+    gradeType: formData?.gradeType || 'cgpa',
+    gradeValue: formData?.gradeValue || '',
+    englishTest: formData?.englishTest || 'none',
+  });
+  
+  // Load form data when component mounts
+  useEffect(() => {
+    if (formData && Object.keys(formData).length > 0) {
+      setFormState({
+        scholarshipType: formData.scholarshipType || 'scholarshipLoan',
+        academicQualification: formData.academicQualification || '',
+        institutionType: formData.institutionType || 'malaysiaOrExchange',
+        studyScope: formData.studyScope || '',
+        enrollmentDate: formData.enrollmentDate || '',
+        expectedGraduationDate: formData.expectedGraduationDate || '',
+        currentYear: formData.currentYear || '',
+        gradeType: formData.gradeType || 'cgpa',
+        gradeValue: formData.gradeValue || '',
+        englishTest: formData.englishTest || 'none',
+      });
+    }
+  }, [formData]);
+  
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Handle radio button changes
+  const handleRadioChange = (name: string, value: string) => {
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Handle select changes
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Handle date changes
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Validate form based on current status
+  const validateForm = () => {
+    if (!formState.scholarshipType) {
+      toast({
+        title: "Validation Error",
+        description: "Please select your scholarship type.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!formState.academicQualification) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your academic qualification.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!formState.institutionType) {
+      toast({
+        title: "Validation Error",
+        description: "Please select your institution type.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!formState.studyScope) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your study scope.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!formState.enrollmentDate || !formState.expectedGraduationDate) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter both enrollment and expected graduation dates.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!formState.gradeType) {
+      toast({
+        title: "Validation Error",
+        description: "Please select your grade type.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (formState.gradeType !== 'noGrade' && !formState.gradeValue) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your grade value.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    nextStep();
-    router.push("/preferences");
+    
+    if (!validateForm()) return;
+    
+    // Update the form context with the local state
+    updateFormData(formState);
+    
+    // Save the current step and proceed to the next one
+    const success = await saveStep('current-status');
+    
+    if (success) {
+      router.push('/preferences');
+    }
   };
-
+  
+  // Handle back button
   const handleBack = () => {
-    prevStep();
-    router.push("/personal-information");
+    router.push('/personal-information');
   };
-
-  const handleEnrollmentDateChange = (selectedDate: Date | undefined) => {
-    setEnrollmentDate(selectedDate);
-    if (selectedDate) {
-      updateCurrentStatus({ enrollmentDate: selectedDate.toISOString() });
-    }
-  };
-
-  const handleGraduationDateChange = (selectedDate: Date | undefined) => {
-    setGraduationDate(selectedDate);
-    if (selectedDate) {
-      updateCurrentStatus({ graduationDate: selectedDate.toISOString() });
-    }
-  };
-
+  
   return (
-    <FormLayout
-      title="Current Status"
-      description="Tell us more about your academic journey and qualifications"
-    >
+    <FormLayout title="Current Status">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Scholarship Type */}
         <div className="space-y-2">
-          <Label>Scholarship Type</Label>
-          <RadioGroup
-            value={formData.currentStatus.scholarshipType}
-            onValueChange={(value) => 
-              updateCurrentStatus({ scholarshipType: value as "scholarship" | "selfFunded" })
-            }
-            className="flex flex-col space-y-2"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="scholarship" id="scholarship" />
-              <Label htmlFor="scholarship">Scholarship</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="selfFunded" id="self-funded" />
-              <Label htmlFor="self-funded">Self-Funded</Label>
-            </div>
-          </RadioGroup>
+          <h2 className="text-lg font-medium">What is your scholarship type?</h2>
+          <div className="flex space-x-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="scholarshipType"
+                checked={formState.scholarshipType === 'scholarshipLoan'}
+                onChange={() => handleRadioChange('scholarshipType', 'scholarshipLoan')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Scholarship/Loan</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="scholarshipType"
+                checked={formState.scholarshipType === 'selfFunded'}
+                onChange={() => handleRadioChange('scholarshipType', 'selfFunded')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Self-Funded</span>
+            </label>
+          </div>
         </div>
-
+        
         {/* Academic Qualification */}
         <div className="space-y-2">
-          <Label htmlFor="academic-qualification">Academic Qualification</Label>
-          <Select
-            value={formData.currentStatus.academicQualification}
-            onValueChange={(value) => updateCurrentStatus({ academicQualification: value })}
-          >
-            <SelectTrigger id="academic-qualification">
-              <SelectValue placeholder="Select your highest qualification" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="highSchool">High School</SelectItem>
-              <SelectItem value="diploma">Diploma</SelectItem>
-              <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-              <SelectItem value="master">Master's Degree</SelectItem>
-              <SelectItem value="phd">PhD</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Institution Type */}
-        <div className="space-y-2">
-          <Label>Institution Type</Label>
-          <RadioGroup
-            value={formData.currentStatus.institutionType}
-            onValueChange={(value) => 
-              updateCurrentStatus({ institutionType: value as "malaysia" | "abroad" })
-            }
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="malaysia" id="malaysia-institution" />
-              <Label htmlFor="malaysia-institution">Malaysia</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="abroad" id="abroad-institution" />
-              <Label htmlFor="abroad-institution">Abroad</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Scope of Study */}
-        <div className="space-y-2">
-          <Label htmlFor="scope-of-study">Scope of Study</Label>
-          <Input
-            id="scope-of-study"
-            value={formData.currentStatus.scopeOfStudy}
-            onChange={(e) => updateCurrentStatus({ scopeOfStudy: e.target.value })}
-            placeholder="e.g., Computer Science, Medicine, etc."
+          <label className="block text-sm font-medium text-gray-700">
+            Academic Qualification
+          </label>
+          <input
+            type="text"
+            name="academicQualification"
+            value={formState.academicQualification}
+            onChange={handleInputChange}
+            placeholder="Enter your academic qualification"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
         </div>
-
+        
+        {/* Institution Type */}
+        <div className="space-y-2">
+          <h3 className="text-md font-medium">Institution Type</h3>
+          <div className="flex space-x-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="institutionType"
+                checked={formState.institutionType === 'malaysiaOrExchange'}
+                onChange={() => handleRadioChange('institutionType', 'malaysiaOrExchange')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Malaysia or Exchange Program</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="institutionType"
+                checked={formState.institutionType === 'abroad'}
+                onChange={() => handleRadioChange('institutionType', 'abroad')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Abroad</span>
+            </label>
+          </div>
+        </div>
+        
+        {/* Study Scope */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Study Scope
+          </label>
+          <input
+            type="text"
+            name="studyScope"
+            value={formState.studyScope}
+            onChange={handleInputChange}
+            placeholder="Enter your field of study"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          />
+        </div>
+        
         {/* Enrollment Date */}
         <div className="space-y-2">
-          <Label>Enrollment Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !enrollmentDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {enrollmentDate ? format(enrollmentDate, "dd/MM/yyyy") : <span>Select date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={enrollmentDate}
-                onSelect={handleEnrollmentDateChange}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+          <label className="block text-sm font-medium text-gray-700">
+            Enrollment Date
+          </label>
+          <input
+            type="date"
+            name="enrollmentDate"
+            value={formState.enrollmentDate}
+            onChange={handleDateChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          />
         </div>
-
-        {/* Graduation Date */}
+        
+        {/* Expected Graduation Date */}
         <div className="space-y-2">
-          <Label>Graduation Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !graduationDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {graduationDate ? format(graduationDate, "dd/MM/yyyy") : <span>Select date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={graduationDate}
-                onSelect={handleGraduationDateChange}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+          <label className="block text-sm font-medium text-gray-700">
+            Expected Graduation Date
+          </label>
+          <input
+            type="date"
+            name="expectedGraduationDate"
+            value={formState.expectedGraduationDate}
+            onChange={handleDateChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          />
         </div>
-
+        
         {/* Current Year */}
         <div className="space-y-2">
-          <Label htmlFor="current-year">Current Year</Label>
-          <Select
-            value={formData.currentStatus.currentYear}
-            onValueChange={(value) => updateCurrentStatus({ currentYear: value })}
+          <label className="block text-sm font-medium text-gray-700">
+            Current Year
+          </label>
+          <select
+            name="currentYear"
+            value={formState.currentYear}
+            onChange={handleSelectChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
-            <SelectTrigger id="current-year">
-              <SelectValue placeholder="Select your current year" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="year1">Year 1</SelectItem>
-              <SelectItem value="year2">Year 2</SelectItem>
-              <SelectItem value="year3">Year 3</SelectItem>
-              <SelectItem value="year4">Year 4</SelectItem>
-              <SelectItem value="year5">Year 5</SelectItem>
-              <SelectItem value="graduated">Graduated</SelectItem>
-            </SelectContent>
-          </Select>
+            <option value="">Select Current Year</option>
+            <option value="1">Year 1</option>
+            <option value="2">Year 2</option>
+            <option value="3">Year 3</option>
+            <option value="4">Year 4</option>
+            <option value="5+">Year 5+</option>
+          </select>
         </div>
-
+        
         {/* Grade Type */}
         <div className="space-y-2">
-          <Label>Grade Type</Label>
-          <RadioGroup
-            value={formData.currentStatus.gradeType}
-            onValueChange={(value) => 
-              updateCurrentStatus({ gradeType: value as "cgpa" | "grade" | "others" | "none" })
-            }
-            className="flex flex-wrap gap-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="cgpa" id="cgpa" />
-              <Label htmlFor="cgpa">CGPA</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="grade" id="grade" />
-              <Label htmlFor="grade">Grade</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="others" id="others-grade" />
-              <Label htmlFor="others-grade">Others</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="none-grade" />
-              <Label htmlFor="none-grade">None</Label>
-            </div>
-          </RadioGroup>
+          <h3 className="text-md font-medium">Grade Type</h3>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="gradeType"
+                checked={formState.gradeType === 'cgpa'}
+                onChange={() => handleRadioChange('gradeType', 'cgpa')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>CGPA</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="gradeType"
+                checked={formState.gradeType === 'grade'}
+                onChange={() => handleRadioChange('gradeType', 'grade')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Grade (A, B, etc.)</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="gradeType"
+                checked={formState.gradeType === 'others'}
+                onChange={() => handleRadioChange('gradeType', 'others')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Others</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name="gradeType"
+                checked={formState.gradeType === 'noGrade'}
+                onChange={() => handleRadioChange('gradeType', 'noGrade')}
+                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>No Grade Yet</span>
+            </label>
+          </div>
         </div>
-
-        {/* Grade */}
-        {formData.currentStatus.gradeType !== "none" && (
+        
+        {/* Grade Value (conditional) */}
+        {formState.gradeType !== 'noGrade' && (
           <div className="space-y-2">
-            <Label htmlFor="grade">Your {formData.currentStatus.gradeType === "cgpa" ? "CGPA" : "Grade"}</Label>
-            <Input
-              id="grade"
-              value={formData.currentStatus.grade}
-              onChange={(e) => updateCurrentStatus({ grade: e.target.value })}
-              placeholder={formData.currentStatus.gradeType === "cgpa" ? "e.g., 3.5" : "e.g., A, B+, etc."}
+            <label className="block text-sm font-medium text-gray-700">
+              Grade Value
+            </label>
+            <input
+              type="text"
+              name="gradeValue"
+              value={formState.gradeValue}
+              onChange={handleInputChange}
+              placeholder={formState.gradeType === 'cgpa' ? "e.g. 3.75" : "e.g. A"}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
         )}
-
+        
         {/* English Test */}
         <div className="space-y-2">
-          <Label>English Test</Label>
-          <RadioGroup
-            value={formData.currentStatus.englishTest}
-            onValueChange={(value) => 
-              updateCurrentStatus({ englishTest: value as "muet" | "cefr" | "toefl" | "ielts" | "other" | "none" })
-            }
-            className="flex flex-wrap gap-4"
+          <label className="block text-sm font-medium text-gray-700">
+            English Proficiency Test
+          </label>
+          <select
+            name="englishTest"
+            value={formState.englishTest}
+            onChange={handleSelectChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="muet" id="muet" />
-              <Label htmlFor="muet">MUET</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="cefr" id="cefr" />
-              <Label htmlFor="cefr">CEFR</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="toefl" id="toefl" />
-              <Label htmlFor="toefl">TOEFL</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="ielts" id="ielts" />
-              <Label htmlFor="ielts">IELTS</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="other" id="other-test" />
-              <Label htmlFor="other-test">Other</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="none-test" />
-              <Label htmlFor="none-test">None</Label>
-            </div>
-          </RadioGroup>
+            <option value="muet">MUET</option>
+            <option value="cefr">CEFR</option>
+            <option value="toefl">TOEFL</option>
+            <option value="ielts">IELTS</option>
+            <option value="other">Other</option>
+            <option value="none">None</option>
+          </select>
         </div>
-
-        <div className="flex gap-3 pt-4">
-          <Button
-            type="button"
+        
+        {/* Navigation Buttons */}
+        <div className="flex justify-between pt-4">
+          <Button 
+            type="button" 
+            onClick={handleBack} 
             variant="outline"
-            onClick={handleBack}
-            className="flex-1"
+            disabled={isSubmitting}
           >
             Back
           </Button>
-          <Button
-            type="submit"
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
           >
-            Next Step
+            {isSubmitting ? 'Saving...' : 'Next'}
           </Button>
         </div>
       </form>

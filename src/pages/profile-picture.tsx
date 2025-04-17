@@ -1,33 +1,62 @@
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
-import { useFormData } from "@/context/FormContext";
+import { useForm } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageIcon, XIcon, UserIcon } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ProfilePicture() {
   const router = useRouter();
-  const { formData, updateProfilePicture, nextStep, prevStep } = useFormData();
-  const [image, setImage] = useState<string | null>(formData.profilePicture.image);
+  const { formData, updateFormData, saveStep, isSubmitting } = useForm();
+  const { toast } = useToast();
+  
+  // Initialize state with profile picture from form data
+  const [image, setImage] = useState<string | null>(formData?.profilePicture || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfilePicture({ image });
-    nextStep();
-    router.push("/overview");
+    
+    // Update form data with profile picture
+    updateFormData({ profilePicture: image });
+    
+    // Save and proceed to next step
+    const success = await saveStep('profile-picture');
+    if (success) {
+      router.push("/overview");
+    }
   };
 
   const handleBack = () => {
-    prevStep();
     router.push("/preferences");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image under 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -102,20 +131,20 @@ export default function ProfilePicture() {
           </div>
         </div>
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex justify-between pt-4">
           <Button
             type="button"
-            variant="outline"
             onClick={handleBack}
-            className="flex-1"
+            variant="outline"
+            disabled={isSubmitting}
           >
             Back
           </Button>
           <Button
             type="submit"
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+            disabled={isSubmitting}
           >
-            {image ? "Next Step" : "Skip"}
+            {isSubmitting ? 'Saving...' : (image ? 'Next' : 'Skip')}
           </Button>
         </div>
       </form>
