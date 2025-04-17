@@ -4,11 +4,33 @@ import { Button } from "@/components/ui/button";
 import FormLayout from '@/components/FormLayout';
 import { useForm } from '@/context/FormContext';
 import { useToast } from '@/components/ui/use-toast';
+import { useSession } from 'next-auth/react';
 
 export default function PersonalInformation() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
+  
+  // Check authentication
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/landing');
+    }
+  }, [status, router]);
+
+  // Don't render the form until we confirm authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (status === 'unauthenticated') {
+    return null;
+  }
   
   // Local form state
   const [formState, setFormState] = useState({

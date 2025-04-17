@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
 import { useForm } from "@/context/FormContext";
@@ -9,11 +9,33 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { Check, Pencil, UserIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useSession } from 'next-auth/react';
 
 export default function Overview() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const { formData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
+  
+  // Check authentication
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/landing');
+    }
+  }, [status, router]);
+
+  // Don't render the form until we confirm authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   const handleBack = () => router.push("/profile-picture");
 
@@ -64,8 +86,8 @@ export default function Overview() {
             )}
           </div>
           <div>
-            <h2 className="text-xl font-bold">{formData?.personalInfo?.fullName}</h2>
-            <p className="text-gray-500">{formData?.personalInfo?.email}</p>
+            <h2 className="text-xl font-bold">{formData?.fullName}</h2>
+            <p className="text-gray-500">{formData?.email}</p>
           </div>
         </div>
 
@@ -88,42 +110,42 @@ export default function Overview() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500">Identification</p>
-              <p>{formData?.personalInfo?.identificationType === "malaysianIC" ? "Malaysian IC" : "Passport"}: {formData?.personalInfo?.identificationNumber}</p>
+              <p>{formData?.identificationType === "malaysianIC" ? "Malaysian IC" : "Passport"}: {formData?.identificationNumber}</p>
             </div>
             <div>
               <p className="text-gray-500">Gender</p>
-              <p>{formData?.personalInfo?.gender === "male" ? "Male" : "Female"}</p>
+              <p>{formData?.gender === "male" ? "Male" : "Female"}</p>
             </div>
             <div>
               <p className="text-gray-500">Date of Birth</p>
-              <p>{formatDate(formData?.personalInfo?.dateOfBirth)}</p>
+              <p>{formatDate(formData?.dateOfBirth)}</p>
             </div>
             <div>
               <p className="text-gray-500">Phone Number</p>
-              <p>{formData?.personalInfo?.phoneNumber || "Not provided"}</p>
+              <p>{formData?.phoneNumber || "Not provided"}</p>
             </div>
             <div>
               <p className="text-gray-500">Nationality</p>
-              <p>{formData?.personalInfo?.nationality === "malaysian" ? "Malaysian" : "Non-Malaysian"}</p>
+              <p>{formData?.nationality === "malaysian" ? "Malaysian" : "Non-Malaysian"}</p>
             </div>
             <div>
               <p className="text-gray-500">Race</p>
-              <p>{formData?.personalInfo?.race || "Not specified"}</p>
+              <p>{formData?.race || "Not specified"}</p>
             </div>
             <div className="md:col-span-2">
               <p className="text-gray-500">Address</p>
               <p>
                 {[
-                  formData?.personalInfo?.city,
-                  formData?.personalInfo?.state,
-                  formData?.personalInfo?.postcode,
-                  formData?.personalInfo?.country
+                  formData?.city,
+                  formData?.state,
+                  formData?.postcode,
+                  formData?.country
                 ].filter(Boolean).join(", ")}
               </p>
             </div>
             <div>
               <p className="text-gray-500">OKU Status</p>
-              <p>{formData?.personalInfo?.isOKU ? "Yes" : "No"}</p>
+              <p>{formData?.isOKU ? "Yes" : "No"}</p>
             </div>
           </CardContent>
         </Card>
@@ -145,44 +167,44 @@ export default function Overview() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-500">Scholarship Type</p>
-              <p>{formData?.currentStatus?.scholarshipType === "scholarship" ? "Scholarship" : "Self-Funded"}</p>
+              <p>{formData?.scholarshipType === "scholarshipLoan" ? "Scholarship/Loan" : "Self-Funded"}</p>
             </div>
             <div>
               <p className="text-gray-500">Academic Qualification</p>
-              <p>{formData?.currentStatus?.academicQualification || "Not specified"}</p>
+              <p>{formData?.academicQualification || "Not specified"}</p>
             </div>
             <div>
               <p className="text-gray-500">Institution Type</p>
-              <p>{formData?.currentStatus?.institutionType === "malaysia" ? "Malaysia" : "Abroad"}</p>
+              <p>{formData?.institutionType === "malaysiaOrExchange" ? "Malaysia/Exchange" : "Abroad"}</p>
             </div>
             <div>
-              <p className="text-gray-500">Scope of Study</p>
-              <p>{formData?.currentStatus?.scopeOfStudy || "Not specified"}</p>
+              <p className="text-gray-500">Study Scope</p>
+              <p>{formData?.studyScope || "Not specified"}</p>
             </div>
             <div>
               <p className="text-gray-500">Enrollment Date</p>
-              <p>{formatDate(formData?.currentStatus?.enrollmentDate)}</p>
+              <p>{formatDate(formData?.enrollmentDate)}</p>
             </div>
             <div>
-              <p className="text-gray-500">Graduation Date</p>
-              <p>{formatDate(formData?.currentStatus?.graduationDate)}</p>
+              <p className="text-gray-500">Expected Graduation Date</p>
+              <p>{formatDate(formData?.expectedGraduationDate)}</p>
             </div>
             <div>
               <p className="text-gray-500">Current Year</p>
-              <p>{formData?.currentStatus?.currentYear || "Not specified"}</p>
+              <p>{formData?.currentYear || "Not specified"}</p>
             </div>
             <div>
               <p className="text-gray-500">Grade</p>
               <p>
-                {formData?.currentStatus?.gradeType !== "none"
-                  ? `${formData?.currentStatus?.gradeType.toUpperCase()}: ${formData?.currentStatus?.grade}`
+                {formData?.gradeType !== "noGrade"
+                  ? `${formData?.gradeType?.toUpperCase()}: ${formData?.gradeValue}`
                   : "Not applicable"}
               </p>
             </div>
             <div>
               <p className="text-gray-500">English Test</p>
-              <p>{formData?.currentStatus?.englishTest !== "none" 
-                ? formData?.currentStatus?.englishTest.toUpperCase() 
+              <p>{formData?.englishTest !== "none" 
+                ? formData?.englishTest?.toUpperCase() 
                 : "None"}
               </p>
             </div>
@@ -207,8 +229,8 @@ export default function Overview() {
             <div>
               <p className="text-gray-500 mb-2">Sectors of Interest</p>
               <div className="flex flex-wrap gap-2">
-                {formData?.preferences?.sectors?.length > 0 ? (
-                  formData.preferences.sectors.map((sector: string) => (
+                {(formData?.interestedSectors && formData?.interestedSectors.length > 0) ? (
+                  formData?.interestedSectors?.map((sector: string) => (
                     <Badge key={sector} variant="secondary">
                       {sector}
                     </Badge>
@@ -222,8 +244,8 @@ export default function Overview() {
             <div>
               <p className="text-gray-500 mb-2">Roles of Interest</p>
               <div className="flex flex-wrap gap-2">
-                {formData?.preferences?.roles?.length > 0 ? (
-                  formData.preferences.roles.map((role: string) => (
+                {(formData?.interestedRoles && formData?.interestedRoles.length > 0) ? (
+                  formData?.interestedRoles?.map((role: string) => (
                     <Badge key={role} variant="secondary">
                       {role}
                     </Badge>
@@ -237,8 +259,8 @@ export default function Overview() {
             <div>
               <p className="text-gray-500 mb-2">Preferred Locations</p>
               <div className="flex flex-wrap gap-2">
-                {formData?.preferences?.states?.length > 0 ? (
-                  formData.preferences.states.map((state: string) => (
+                {(formData?.preferredStates && formData?.preferredStates.length > 0) ? (
+                  formData?.preferredStates?.map((state: string) => (
                     <Badge key={state} variant="secondary">
                       {state}
                     </Badge>

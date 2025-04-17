@@ -3,9 +3,39 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { signIn } from 'next-auth/react';
+import { useState } from 'react';
+
+type Provider = 'google' | 'apple';
+type UserType = 'university' | 'company';
 
 const SignUp: NextPage = () => {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedRole, setSelectedRole] = useState<UserType | null>(null);
+
+  const handleSocialSignIn = async (provider: Provider) => {
+    try {
+      setIsLoading(true);
+      if (selectedRole) {
+        await signIn(provider, { 
+          callbackUrl: '/',
+          userType: selectedRole // This will be available in the profile object during sign in
+        });
+      } else {
+        // Show error or prompt to select role
+        alert('Please select your role first');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error signing in:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const handleRoleSelect = (role: UserType) => {
+    setSelectedRole(role);
+  };
 
   return (
     <>
@@ -51,7 +81,12 @@ const SignUp: NextPage = () => {
                   </div>
                   
                   <div className="col-span-1">
-                    <button className="w-full border border-gray-300 rounded-md p-3 flex flex-col items-center justify-center hover:bg-gray-50 transition">
+                    <button 
+                      onClick={() => handleRoleSelect('university')}
+                      className={`w-full border rounded-md p-3 flex flex-col items-center justify-center hover:bg-gray-50 transition ${
+                        selectedRole === 'university' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                      }`}
+                    >
                       <div className="bg-blue-100 p-2 rounded-md mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
                           <path d="m18 16 4-4-4-4" />
@@ -64,7 +99,12 @@ const SignUp: NextPage = () => {
                   </div>
                   
                   <div className="col-span-1">
-                    <button className="w-full border border-gray-300 rounded-md p-3 flex flex-col items-center justify-center hover:bg-gray-50 transition">
+                    <button 
+                      onClick={() => handleRoleSelect('company')}
+                      className={`w-full border rounded-md p-3 flex flex-col items-center justify-center hover:bg-gray-50 transition ${
+                        selectedRole === 'company' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                      }`}
+                    >
                       <div className="bg-blue-100 p-2 rounded-md mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
                           <path d="M20 7h-9" />
@@ -91,7 +131,8 @@ const SignUp: NextPage = () => {
 
               {/* Authentication buttons */}
               <button
-                onClick={() => {}}
+                onClick={() => handleSocialSignIn('google')}
+                disabled={isLoading}
                 className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-md hover:bg-gray-50 transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
@@ -124,18 +165,19 @@ const SignUp: NextPage = () => {
                     d="M14.228 4.508h4.26v4.26h-4.26z"
                   />
                 </svg>
-                Continue With Google
+                {isLoading ? 'Loading...' : 'Continue With Google'}
               </button>
 
               <button
-                onClick={() => {}}
+                onClick={() => handleSocialSignIn('apple')}
+                disabled={isLoading}
                 className="w-full flex items-center justify-center gap-2 bg-[#000000] text-white px-4 py-3 rounded-md hover:bg-gray-800 transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 7c-3 0-4 3-4 5.5 0 3 2 7.5 4 7.5 1.088 0 1.709-.744 3-2 1.292 1.256 1.913 2 3 2 2 0 4-4.5 4-7.5C19 10 18 7 15 7c-1.087 0-1.708.744-3 2-1.292-1.256-1.913-2-3-2z"></path>
                   <path d="M9 7V3h6v4"></path>
                 </svg>
-                Continue With Apple
+                {isLoading ? 'Loading...' : 'Continue With Apple'}
               </button>
             </div>
 

@@ -3,9 +3,25 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { signIn } from 'next-auth/react';
+import { useState } from 'react';
+
+type Provider = 'google' | 'apple';
 
 const SignIn: NextPage = () => {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const handleSocialSignIn = async (provider: Provider) => {
+    try {
+      setIsLoading(true);
+      await signIn(provider, { callbackUrl: '/' });
+    } catch (error) {
+      console.error('Error signing in:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -54,7 +70,8 @@ const SignIn: NextPage = () => {
 
               {/* Authentication buttons */}
               <button
-                onClick={() => {}}
+                onClick={() => handleSocialSignIn('google')}
+                disabled={isLoading}
                 className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-md hover:bg-gray-50 transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
@@ -87,18 +104,19 @@ const SignIn: NextPage = () => {
                     d="M14.228 4.508h4.26v4.26h-4.26z"
                   />
                 </svg>
-                Continue With Google
+                {isLoading ? 'Loading...' : 'Continue With Google'}
               </button>
 
               <button
-                onClick={() => {}}
+                onClick={() => handleSocialSignIn('apple')}
+                disabled={isLoading}
                 className="w-full flex items-center justify-center gap-2 bg-[#000000] text-white px-4 py-3 rounded-md hover:bg-gray-800 transition"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 7c-3 0-4 3-4 5.5 0 3 2 7.5 4 7.5 1.088 0 1.709-.744 3-2 1.292 1.256 1.913 2 3 2 2 0 4-4.5 4-7.5C19 10 18 7 15 7c-1.087 0-1.708.744-3 2-1.292-1.256-1.913-2-3-2z"></path>
                   <path d="M9 7V3h6v4"></path>
                 </svg>
-                Continue With Apple
+                {isLoading ? 'Loading...' : 'Continue With Apple'}
               </button>
             </div>
 
