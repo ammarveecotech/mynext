@@ -12,26 +12,6 @@ export default function PersonalInformation() {
   const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
   
-  // Check authentication
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/landing');
-    }
-  }, [status, router]);
-
-  // Don't render the form until we confirm authentication
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-  
-  if (status === 'unauthenticated') {
-    return null;
-  }
-  
   // Local form state
   const [formState, setFormState] = useState({
     identificationType: formData.identificationType || 'malaysianIC',
@@ -50,6 +30,13 @@ export default function PersonalInformation() {
     postcode: formData.postcode || '',
     isOKU: formData.isOKU || false,
   });
+
+  // Check authentication
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/signin');
+    }
+  }, [status, router]);
   
   // Load form data when component mounts
   useEffect(() => {
@@ -74,6 +61,19 @@ export default function PersonalInformation() {
     }
   }, [formData]);
   
+  // Don't render the form until we confirm authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (status === 'unauthenticated') {
+    return null;
+  }
+
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;

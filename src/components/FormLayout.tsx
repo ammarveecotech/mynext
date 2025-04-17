@@ -3,8 +3,19 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { cn } from "@/lib/utils";
 import { 
-  User, Briefcase, Heart, Camera, FileText
+  User, Briefcase, Heart, Camera, FileText,
+  Settings, LogOut
 } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -39,10 +50,25 @@ interface FormLayoutProps {
 
 const FormLayout = ({ children, title, greeting, description }: FormLayoutProps) => {
   const router = useRouter();
+  const { data: session } = useSession();
   const currentPath = router.pathname;
 
-  // Get username from local storage or set default
-  const username = "bedump tan";
+  // Get username from session or set default
+  const username = session?.user?.name || "user";
+  
+  // Get initials for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: true, callbackUrl: '/signin' });
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -111,8 +137,41 @@ const FormLayout = ({ children, title, greeting, description }: FormLayoutProps)
 
       {/* Main content */}
       <div className="flex-1 overflow-auto bg-white">
+        {/* Header with avatar */}
+        <header className="border-b px-12 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold">{title}</h1>
+          
+          {/* User avatar and dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none">
+              <Avatar className="h-9 w-9 cursor-pointer">
+                <AvatarImage src={session?.user?.image || ""} alt={username} />
+                <AvatarFallback className="bg-[#0c1b38] text-white">
+                  {getInitials(username)}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+        
         <main className="max-w-4xl mx-auto py-8 px-12">
-          <h1 className="text-2xl font-bold mb-6">{title}</h1>
           {children}
         </main>
       </div>

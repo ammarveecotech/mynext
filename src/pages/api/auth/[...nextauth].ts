@@ -1,6 +1,8 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import AppleProvider from 'next-auth/providers/apple';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { MongoClient } from 'mongodb';
 
 // Add a type declaration for our session
 declare module "next-auth" {
@@ -13,6 +15,12 @@ declare module "next-auth" {
     }
   }
 }
+
+// Connect to MongoDB
+const connectToDatabase = async () => {
+  const client = await MongoClient.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mynext_db');
+  return client;
+};
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -40,8 +48,39 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    // Apple authentication provider
+    AppleProvider({
+      clientId: process.env.APPLE_ID!,
+      clientSecret: process.env.APPLE_SECRET!,
+    }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // Only needed for OAuth providers like Google
+      if (account?.provider === 'google' && user?.email) {
+        try {
+          // Connect to MongoDB
+          const client = await connectToDatabase();
+          const db = client.db();
+          
+          // Check if email exists in core_model_users collection
+          const userExists = await db.collection('core_model_users').findOne({ 
+            email: user.email 
+          });
+          
+          await client.close();
+          
+          // Return true if user exists in database, false otherwise
+          return !!userExists;
+        } catch (error) {
+          console.error('Error checking user:', error);
+          return false;
+        }
+      }
+      
+      // For credentials provider, return true to allow sign in
+      return true;
+    },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub ?? '';
@@ -56,7 +95,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   pages: {
-    signIn: '/landing',
+    signIn: '/signin',
     error: '/signin',
   },
   session: {

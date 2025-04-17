@@ -1,131 +1,119 @@
 import type { NextPage } from 'next';
+import { useState } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter } from 'next/router';
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
-
-type Provider = 'google' | 'apple';
 
 const SignIn: NextPage = () => {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const { error } = router.query;
 
-  const handleSocialSignIn = async (provider: Provider) => {
-    try {
-      setIsLoading(true);
-      await signIn(provider, { callbackUrl: '/' });
-    } catch (error) {
-      console.error('Error signing in:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  // Define error messages
+  const errorMessages: Record<string, string> = {
+    AccessDenied: "Access denied. Your email must be registered in our system before you can sign in.",
+    Default: "An error occurred during sign in. Please try again.",
+    Callback: "The URL you tried to access requires authentication.",
+    OAuthSignin: "Error starting the sign in process. Please try again.",
+    OAuthCallback: "Error completing the sign in process. Please try again.",
+    CredentialsSignin: "Invalid credentials. Please check your username and password."
   };
+
+  const errorMessage = error ? (errorMessages[error as string] || errorMessages.Default) : "";
 
   return (
     <>
       <Head>
-        <title>Sign In - MyNext</title>
+        <title>MyNext - Sign In</title>
         <meta name="description" content="Sign in to your MyNext account" />
       </Head>
-      <div className="min-h-screen flex bg-[#8e44ad]">
-        {/* Left section with image/background */}
-        <div className="w-3/5 relative hidden md:block">
-          <div className="absolute inset-0 bg-[#8e44ad] bg-opacity-70 z-10"></div>
-          <div className="absolute inset-0 flex items-center justify-center z-20">
-            <div className="text-white text-center">
-              <h1 className="text-5xl font-bold mb-4">Welcome to MyNext</h1>
-              <p className="text-xl">Your dedicated platform for career growth and opportunities</p>
-            </div>
+      <div className="flex min-h-screen">
+        {/* Left side - Purple background with welcome message */}
+        <div className="hidden md:flex md:w-1/2 bg-purple-600 text-white flex-col justify-center items-center p-12">
+          <div className="max-w-md">
+            <h1 className="text-4xl font-bold mb-4">Welcome to MyNext</h1>
+            <p className="text-xl">Your dedicated platform for career growth and opportunities</p>
           </div>
-          {/* Background image could be added here */}
         </div>
-
-        {/* Right section with sign in form */}
-        <div className="w-full md:w-2/5 bg-white flex flex-col justify-center items-center p-8">
+        
+        {/* Right side - Sign in form */}
+        <div className="w-full md:w-1/2 flex items-center justify-center p-8">
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <div className="bg-[#0c1b38] text-white font-bold py-2 px-4 rounded-md text-2xl">
-                  MyNext
-                </div>
+              <div className="inline-block bg-[#0c1b38] text-white text-xl font-bold py-2 px-4 rounded-md mb-6">
+                MyNext
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Sign In</h2>
-              <p className="text-gray-600 mt-2">Access your MyNext account</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-center">
-                <div className="grid grid-cols-2 gap-4 w-full">
-                  <div className="col-span-2">
-                    <div className="flex justify-center">
-                      <div className="px-4 py-2 text-center">
-                        <span className="text-sm font-medium text-gray-500">Sign in to continue</span>
-                      </div>
-                    </div>
-                  </div>
+              <h1 className="text-2xl font-bold text-gray-800 mb-2">Sign In</h1>
+              <p className="text-gray-600 mb-4">Access your MyNext account</p>
+              
+              {/* Error message */}
+              {error && (
+                <div className="mb-6 p-4 text-red-700 bg-red-100 border border-red-300 rounded">
+                  {errorMessage}
                 </div>
+              )}
+              
+              <p className="text-sm text-gray-500 mb-6">Sign in to continue</p>
+              
+              <div className="space-y-4">
+                {/* Google sign in button */}
+                <button
+                  onClick={() => {
+                    setLoading(true);
+                    signIn('google', { 
+                      callbackUrl: '/personal-information'
+                    });
+                  }}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center bg-white border border-gray-300 rounded-md py-3 px-4 text-lg font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"
+                    />
+                  </svg>
+                  Continue With Google
+                </button>
+                
+                {/* Apple sign in button */}
+                <button
+                  onClick={() => {
+                    setLoading(true);
+                    signIn('apple', { 
+                      callbackUrl: '/personal-information'
+                    });
+                  }}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center bg-black text-white rounded-md py-3 px-4 text-lg font-medium hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z"/>
+                  </svg>
+                  Continue With Apple
+                </button>
+                
+                {/* Test account button - for development purposes */}
+                <button
+                  onClick={() => {
+                    setLoading(true);
+                    signIn('credentials', {
+                      username: 'user',
+                      password: 'password',
+                      callbackUrl: '/personal-information',
+                      redirect: true
+                    });
+                  }}
+                  disabled={loading}
+                  className="w-full bg-blue-600 text-white rounded-md py-3 px-4 text-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                >
+                  {loading ? 'Signing in...' : 'Sign In with Test Account'}
+                </button>
               </div>
-
-              {/* Authentication buttons */}
-              <button
-                onClick={() => handleSocialSignIn('google')}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-md hover:bg-gray-50 transition"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                  <path
-                    fill="#4285F4"
-                    d="M12.168 6.272L14.925 3h.343v6.468H12.28v-.312c0-.13.033-.264.1-.402.064-.138.157-.26.28-.365l.21-.187c.347-.304.52-.74.52-1.174a1.801 1.801 0 0 0-.286-.985 2.035 2.035 0 0 0-.764-.7 2.23 2.23 0 0 0-1.067-.251 2.242 2.242 0 0 0-1.026.233c-.3.156-.56.38-.765.673a1.762 1.762 0 0 0-.285.984c0 .438.177.855.5 1.184l.205.187a1.55 1.55 0 0 1 .29.365.93.93 0 0 1 .101.401v.354l-2.867.022v-6.49h.33l2.726 3.137V6.24l.005.033z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M5.835 14.192v-4.26h4.26v4.26h-4.26z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.835 8.768v-4.26h4.26v4.26h-4.26z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M5.835 19.784v-4.26h4.26v4.26h-4.26z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M14.228 8.768v4.261h-4.26V8.768h4.26z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M14.228 19.784v-4.26h4.26v4.26h-4.26z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M14.228 4.508h4.26v4.26h-4.26z"
-                  />
-                </svg>
-                {isLoading ? 'Loading...' : 'Continue With Google'}
-              </button>
-
-              <button
-                onClick={() => handleSocialSignIn('apple')}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-[#000000] text-white px-4 py-3 rounded-md hover:bg-gray-800 transition"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 7c-3 0-4 3-4 5.5 0 3 2 7.5 4 7.5 1.088 0 1.709-.744 3-2 1.292 1.256 1.913 2 3 2 2 0 4-4.5 4-7.5C19 10 18 7 15 7c-1.087 0-1.708.744-3 2-1.292-1.256-1.913-2-3-2z"></path>
-                  <path d="M9 7V3h6v4"></path>
-                </svg>
-                {isLoading ? 'Loading...' : 'Continue With Apple'}
-              </button>
-            </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-gray-600">
-                Don't have an account?{' '}
-                <Link href="/signup" className="text-[#0c1b38] font-medium hover:underline">
-                  Sign Up
-                </Link>
+              
+              <p className="mt-8 text-sm text-gray-600">
+                Don't have an account? <Link href="/signup" className="text-blue-600 hover:text-blue-800 font-medium">Sign Up</Link>
               </p>
             </div>
           </div>

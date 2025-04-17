@@ -8,7 +8,7 @@ export default function TestAuth() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/landing');
+      router.replace('/signin');
     }
   }, [status, router]);
 

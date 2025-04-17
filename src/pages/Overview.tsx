@@ -20,7 +20,7 @@ export default function Overview() {
   // Check authentication
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/landing');
+      router.replace('/signin');
     }
   }, [status, router]);
 

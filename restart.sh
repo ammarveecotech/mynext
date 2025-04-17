@@ -2,12 +2,11 @@
 
 # Stop any running Next.js processes
 echo "Stopping any running Next.js processes..."
-pkill -f next
+pkill -f "node.*next"
 
 # Clear Next.js cache
 echo "Clearing Next.js cache..."
-rm -rf .next
-rm -rf node_modules/.cache
+rm -rf .next/cache
 
 # Install dependencies (if needed)
 echo "Checking dependencies..."

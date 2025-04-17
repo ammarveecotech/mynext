@@ -14,7 +14,7 @@ const Home: NextPage = () => {
     if (session) {
       router.push('/personal-information');
     } else {
-      router.push('/landing');
+      router.push('/signin');
     }
   }, [session, status, router]);
 
