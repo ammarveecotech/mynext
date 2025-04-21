@@ -360,7 +360,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
         </header>
         
         {/* Main content */}
-        <div className="px-8 py-6">
+        <div className="max-w-5xl mx-auto py-8 px-8 bg-white">
           <h1 className="text-2xl font-bold mb-6">{title}</h1>
           {children}
         </div>

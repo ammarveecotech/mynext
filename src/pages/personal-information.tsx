@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
@@ -11,8 +13,28 @@ import { useToast } from '@/components/ui/use-toast';
 import { User, Calendar, Phone, Mail, MapPin, Heart } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
 import FormLayout from '@/components/FormLayout';
-import { useFormData, type FormData, type MasterDataItem } from "@/hooks/useFormData";
+import { useFormData, type FormData } from "@/hooks/useFormData";
 import React from 'react';
+
+interface MasterDataItem {
+  _id: string;
+  Id: number;
+  Name: string;
+  StateId?: number;
+  StateCode?: string;
+  StateName?: string;
+  CountryId?: number;
+  CountryCode?: string;
+  CountryName?: string;
+  Iso2?: string;
+  Iso3?: string;
+  NumericCode?: string;
+  PhoneCode?: string;
+  Capital?: string;
+  Currency?: string;
+  Region?: string;
+  Subregion?: string;
+}
 
 export default function PersonalInformation() {
   const router = useRouter();
@@ -20,88 +42,136 @@ export default function PersonalInformation() {
   const { formData, fetchFormData, saveFormData } = useFormData();
   const { toast } = useToast();
   
-  // Master data for dropdowns
-  const [countries] = useState<MasterDataItem[]>([
-    { _id: '1', name: 'Malaysia', code: 'MY' },
-    { _id: '2', name: 'Singapore', code: 'SG' },
-  ]);
-  
-  const [states, setStates] = useState<MasterDataItem[]>([
-    { _id: '1', name: 'Selangor', code: 'SGR' },
-    { _id: '2', name: 'Kuala Lumpur', code: 'KUL' },
-  ]);
-  
-  const [cities, setCities] = useState<MasterDataItem[]>([
-    { _id: '1', name: 'Shah Alam', code: 'SHA' },
-    { _id: '2', name: 'Petaling Jaya', code: 'PJ' },
-  ]);
+  // Master data states
+  const [countries, setCountries] = useState<MasterDataItem[]>([]);
+  const [states, setStates] = useState<MasterDataItem[]>([]);
+  const [cities, setCities] = useState<MasterDataItem[]>([]);
   
   // Local form state
   const [formState, setFormState] = useState<FormData>({});
-  const [loading, setLoading] = useState(false);
-  const dataLoadedRef = React.useRef(false);
-  
-  // Check authentication only
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/signin');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch master data from MongoDB
+  const fetchMasterData = async () => {
+    try {
+      // Fetch countries
+      const countriesResponse = await fetch('/api/master-data/countries');
+      const countriesData = await countriesResponse.json();
+      setCountries(countriesData);
+
+      // If there's a selected country, fetch its states
+      if (formState.curr_country) {
+        const statesResponse = await fetch(`/api/master-data/states?countryId=${formState.curr_country}`);
+        const statesData = await statesResponse.json();
+        setStates(statesData);
+
+        // If there's a selected state, fetch its cities
+        if (formState.state) {
+          const citiesResponse = await fetch(`/api/master-data/cities?stateId=${formState.state}`);
+          const citiesData = await citiesResponse.json();
+          setCities(citiesData);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching master data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load location data. Please try again.",
+        variant: "destructive"
+      });
     }
-  }, [status, router]);
-  
-  // Load form data in a separate effect with proper control
+  };
+
+  // Check authentication and load data
   useEffect(() => {
-    // Only run if authenticated and not already loaded/loading
-    if (status === 'authenticated' && !dataLoadedRef.current) {
-      dataLoadedRef.current = true;
-      
-      // Use a flag to prevent multiple calls
-      let isActive = true;
-      
-      const loadData = async () => {
-        if (!isActive) return;
-        
+    let isActive = true;
+
+    const initialize = async () => {
+      if (status === 'unauthenticated') {
+        router.push('/signin');
+        return;
+      }
+
+      if (status === 'authenticated') {
         try {
           setLoading(true);
+          setError(null);
           console.log("PersonalInfo - Fetching form data");
-          // Fetch form data from API
           const data = await fetchFormData();
-          console.log("PersonalInfo - Form data fetched");
           
-          // Initialize form state with fetched data
-          if (data && isActive) {
-            setFormState(data);
+          if (isActive) {
+            console.log("PersonalInfo - Setting form data");
+            setFormState(data || {});
+            await fetchMasterData(); // Fetch master data after form data is loaded
+            setLoading(false);
           }
         } catch (error) {
           console.error('Error loading form data:', error);
           if (isActive) {
+            setError('Failed to load your information. Please try again.');
+            setLoading(false);
             toast({
               title: "Error",
               description: "Failed to load your information. Please try again.",
               variant: "destructive"
             });
           }
-        } finally {
-          if (isActive) {
-            setLoading(false);
-          }
         }
-      };
-      
-      loadData();
-      
-      // Cleanup function to prevent state updates if component unmounts
-      return () => {
-        isActive = false;
-      };
+      }
+    };
+
+    initialize();
+
+    return () => {
+      isActive = false;
+    };
+  }, [status, router, fetchFormData, toast]);
+
+  // Handle select changes with data fetching
+  const handleSelectChange = async (value: string, name: string) => {
+    setFormState((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    try {
+      // Handle dependent dropdowns
+      if (name === 'curr_country') {
+        // When country changes, fetch states for that country
+        const statesResponse = await fetch(`/api/master-data/states?countryId=${value}`);
+        const statesData = await statesResponse.json();
+        setStates(statesData);
+        setCities([]); // Reset cities when country changes
+        
+        // Reset state and city in form
+        setFormState((prev) => ({
+          ...prev,
+          curr_country: value,
+          state: '',
+          city: ''
+        }));
+      } else if (name === 'state') {
+        // When state changes, fetch cities for that state
+        const citiesResponse = await fetch(`/api/master-data/cities?stateId=${value}`);
+        const citiesData = await citiesResponse.json();
+        setCities(citiesData);
+        
+        // Reset city in form
+        setFormState((prev) => ({
+          ...prev,
+          state: value,
+          city: ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching dependent data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load location data. Please try again.",
+        variant: "destructive"
+      });
     }
-  }, [status, fetchFormData, toast]);
-  
-  // Fetch master data (countries, states, cities)
-  const fetchMasterData = async (type: string, parentId: string, parentField?: string) => {
-    // This would be an API call in a real application
-    // For now, return mock data
-    console.log(`Fetching ${type} for parent ID ${parentId} (field: ${parentField})`);
-    return [];
   };
 
   // Handle input changes
@@ -119,39 +189,6 @@ export default function PersonalInformation() {
       ...prev,
       [name]: value
     }));
-  };
-  
-  // Handle select changes
-  const handleSelectChange = async (value: string, name: string) => {
-    setFormState((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Handle dependent dropdowns
-    if (name === 'curr_country') {
-      // When country changes, fetch states for that country
-      const statesData = await fetchMasterData('states', value, 'country_id');
-      setStates(statesData);
-      setCities([]); // Reset cities when country changes
-      
-      // Reset state and city in form
-      setFormState((prev) => ({
-        ...prev,
-        state: '',
-        city: ''
-      }));
-    } else if (name === 'state') {
-      // When state changes, fetch cities for that state
-      const citiesData = await fetchMasterData('cities', value, 'state_id');
-      setCities(citiesData);
-      
-      // Reset city in form
-      setFormState((prev) => ({
-        ...prev,
-        city: ''
-      }));
-    }
   };
   
   // Validate form
@@ -204,6 +241,22 @@ export default function PersonalInformation() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
         <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
+        <div className="text-white text-xl">
+          {error}
+          <Button
+            onClick={() => window.location.reload()}
+            className="ml-4 bg-white text-[#0c1b38]"
+          >
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -363,16 +416,16 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">Current Country</Label>
                   <Select
-                    value={formState.curr_country || ''}
+                    value={formState.curr_country?.toString() || ''}
                     onValueChange={(value) => handleSelectChange(value, 'curr_country')}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select your current country" />
+                      <SelectValue defaultValue="" placeholder="Select your current country" />
                     </SelectTrigger>
                     <SelectContent>
                       {countries.map((country) => (
-                        <SelectItem key={country._id} value={country._id}>
-                          {country.name}
+                        <SelectItem key={country._id} value={country.Id.toString()}>
+                          {country.Name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -383,17 +436,17 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">State</Label>
                   <Select
-                    value={formState.state || ''}
+                    value={formState.state?.toString() || ''}
                     onValueChange={(value) => handleSelectChange(value, 'state')}
                     disabled={!formState.curr_country}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select your state" />
+                      <SelectValue defaultValue="" placeholder="Select your state" />
                     </SelectTrigger>
                     <SelectContent>
                       {states.map((state) => (
-                        <SelectItem key={state._id} value={state._id}>
-                          {state.name}
+                        <SelectItem key={state._id} value={state.Id.toString()}>
+                          {state.Name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -404,17 +457,17 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">City</Label>
                   <Select
-                    value={formState.city || ''}
+                    value={formState.city?.toString() || ''}
                     onValueChange={(value) => handleSelectChange(value, 'city')}
                     disabled={!formState.state}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select your city" />
+                      <SelectValue defaultValue="" placeholder="Select your city" />
                     </SelectTrigger>
                     <SelectContent>
                       {cities.map((city) => (
-                        <SelectItem key={city._id} value={city._id}>
-                          {city.name}
+                        <SelectItem key={city._id} value={city.Id.toString()}>
+                          {city.Name}
                         </SelectItem>
                       ))}
                     </SelectContent>
