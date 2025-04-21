@@ -52,165 +52,49 @@ export interface ICoreModelOnboardform extends Document {
 const CoreModelOnboardformSchema: Schema = new Schema(
   {
     // Step tracking
-    step: { 
-      type: Number,
-      default: 1
-    },
+    step: { type: Number,default: 1 },
     
     // Page 1: Personal Information
-    id_type: { 
-      type: Number,
-      required: true,
-      enum: [1, 2] // 1 - Malaysian IC, 2 - Passport Number
-    },
-    id_number: { 
-      type: String,
-      required: true,
-      trim: true
-    },
-    display_name: { 
-      type: String,
-      required: true,
-      trim: true
-    },
-    gender: { 
-      type: String,
-      required: true,
-      enum: ['F', 'M'] // F - Female, M - Male
-    },
-    dob: { 
-      type: Date,
-      required: true
-    },
-    mob_code: { 
-      type: String,
-      trim: true
-    },
-    mob_number: { 
-      type: String,
-      required: true,
-      trim: true
-    },
-    nationality: { 
-      type: Number,
-      required: true
-    },
-    race: { 
-      type: String,
-      trim: true
-    },
-    curr_country: { 
-      type: String,
-      trim: true
-    },
-    state: { 
-      type: String,
-      trim: true
-    },
-    city: { 
-      type: String,
-      trim: true
-    },
-    postalcode: { 
-      type: String,
-      trim: true
-    },
-    disability_status: { 
-      type: Number,
-      default: 0,
-      enum: [0, 1] // 0 - No, 1 - Yes
-    },
-    disability_code: { 
-      type: String,
-      trim: true
-    },
-    talent_status: { 
-      type: String,
-      trim: true
-    },
+    id_type: { type: Number,required: true,enum: [1, 2] },
+    id_number: { type: String,required: true, trim: true },
+    display_name: { type: String,required: true,trim: true },
+    gender: { type: String,required: true,enum: ['F', 'M'] },
+    dob: { type: Date,required: true },
+    mob_code: { type: String,trim: true },
+    mob_number: { type: String,required: true,trim: true },
+    nationality: { type: Number,required: true },
+    race: { type: String,trim: true },
+    curr_country: { type: String,trim: true },
+    state: { type: String,trim: true },
+    city: { type: String,trim: true },
+    postalcode: { type: String,trim: true },
+    disability_status: { type: Number,default: 0,enum: [0, 1] },
+    disability_code: { type: String, trim: true },
+    talent_status: { type: String,trim: true },
     
     // Page 2: Current Status
-    scholar_status: { 
-      type: String,
-      trim: true
-    },
-    scholar_data: { 
-      type: String,
-      trim: true
-    },
-    curr_qualification: { 
-      type: String,
-      trim: true
-    },
-    inst_name: { 
-      type: String,
-      trim: true
-    },
-    university: { 
-      type: String,
-      trim: true
-    },
-    campus: { 
-      type: String,
-      trim: true
-    },
-    faculty: { 
-      type: String,
-      trim: true
-    },
-    study_program: { 
-      type: String,
-      trim: true
-    },
-    inst_country: { 
-      type: String,
-      trim: true
-    },
-    scope: { 
-      type: String,
-      trim: true
-    },
-    curr_study_year: { 
-      type: String,
-      trim: true
-    },
-    grade_status: { 
-      type: String,
-      trim: true
-    },
-    grade: { 
-      type: String,
-      trim: true
-    },
-    english_tests: { 
-      type: String,
-      trim: true
-    },
-    english_score: { 
-      type: Number
-    },
+    scholar_status: { type: String,trim: true },
+    scholar_data: { type: String,trim: true },
+    curr_qualification: { type: String,trim: true },
+    inst_name: { type: String,trim: true },
+    university: { type: String,trim: true },
+    campus: { type: String,trim: true },
+    faculty: { type: String,trim: true },
+    study_program: { type: String,trim: true },
+    inst_country: { type: String,trim: true },
+    scope: { type: String,trim: true },
+    curr_study_year: { type: String,trim: true },
+    grade_status: { type: String,trim: true },
+    grade: { type: String,trim: true },
+    english_tests: { type: String,trim: true },
+    english_score: { type: Number },
     
     // System fields
-    entry_time: { 
-      type: Date,
-      default: Date.now
-    },
-    update_time: { 
-      type: Date,
-      default: Date.now
-    },
-    created_at: { 
-      type: Date,
-      default: Date.now
-    },
-    updated_at: { 
-      type: Date,
-      default: Date.now
-    },
-    user_id: { 
-      type: String,
-      trim: true
-    }
+    entry_time: { type: Date,default: Date.now },
+    update_time: { type: Date,default: Date.now },
+    created_at: { type: Date,default: Date.now },
+    updated_at: { type: Date,default: Date.now },
+    user_id: { type: String,trim: true }
   },
   { 
     timestamps: true

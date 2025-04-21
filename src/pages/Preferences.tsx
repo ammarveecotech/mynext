@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useForm } from "@/context/FormContext";
 import FormLayout from "@/components/FormLayout";
-import { SectionHeading } from "@/components/ui/section-heading";
 import { Search, X, ChevronDown } from "lucide-react";
 
 export default function Preferences() {

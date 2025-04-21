@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
 import { useForm } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ImageIcon, XIcon, UserIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useSession } from 'next-auth/react';

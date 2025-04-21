@@ -12,21 +12,30 @@ import { useForm } from '@/context/FormContext';
 import { useToast } from '@/components/ui/use-toast';
 import { useSession } from 'next-auth/react';
 import { BookOpen, GraduationCap, Calendar, Award, Languages } from 'lucide-react';
+import { IMasterAcademicQualification, IMasterEnglishEquivalentTestType } from '@/models/MasterTables';
 
-// Define the form state interface
-interface CurrentStatusFormState {
-  scholarshipType?: 'scholarshipLoan' | 'selfFunded';
-  academicQualification?: string;
-  institutionType?: 'malaysiaOrExchange' | 'abroad';
-  studyScope?: string;
-  enrollmentDate?: string;
-  expectedGraduationDate?: string;
-  currentYear?: string;
-  gradeType?: 'cgpa' | 'grade' | 'others' | 'noGrade';
-  gradeValue?: string;
-  englishTest?: 'muet' | 'cefr' | 'toefl' | 'ielts' | 'none' | 'other';
-  [key: string]: string | undefined;
+// Define the form state interface to match CoreModelOnboardform
+interface FormState {
+  scholar_status: string; // scholarshipLoan or selfFunded
+  curr_qualification: string; // from academic qualifications
+  inst_name: string; // institution name (malaysia/abroad)
+  university: string;
+  campus: string;
+  faculty: string;
+  study_program: string;
+  inst_country: string;
+  scope: string; // study scope
+  curr_study_year: string;
+  grade_status: string;
+  grade: string;
+  english_tests: string;
+  english_score: number;
 }
+
+// Helper function to ensure type safety for IDs
+const getIdString = (id: number | undefined): string => {
+  return id?.toString() || '';
+};
 
 export default function CurrentStatus() {
   const router = useRouter();
@@ -34,6 +43,43 @@ export default function CurrentStatus() {
   const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
   
+  // Add state for academic qualifications
+  const [academicQualifications, setAcademicQualifications] = useState<IMasterAcademicQualification[]>([]);
+  const [englishTests, setEnglishTests] = useState<IMasterEnglishEquivalentTestType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch academic qualifications and English tests
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch academic qualifications
+        const qualResponse = await fetch('/api/master-data/academic-qualifications');
+        if (!qualResponse.ok) throw new Error('Failed to fetch academic qualifications');
+        const qualData = await qualResponse.json();
+        setAcademicQualifications(qualData);
+
+        // Fetch English tests
+        const testResponse = await fetch('/api/master-data/english-tests');
+        if (!testResponse.ok) throw new Error('Failed to fetch English tests');
+        const testData = await testResponse.json();
+        setEnglishTests(testData);
+      } catch (error) {
+        console.error('Error fetching master data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load form data. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMasterData();
+  }, [toast]);
+
   // Check authentication
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -55,33 +101,31 @@ export default function CurrentStatus() {
   }
   
   // Local form state with default values
-  const [formState, setFormState] = useState<CurrentStatusFormState>({
-    scholarshipType: formData?.scholarshipType || 'scholarshipLoan',
-    academicQualification: formData?.academicQualification || '',
-    institutionType: formData?.institutionType || 'malaysiaOrExchange',
-    studyScope: formData?.studyScope || '',
-    enrollmentDate: formData?.enrollmentDate || '',
-    expectedGraduationDate: formData?.expectedGraduationDate || '',
-    currentYear: formData?.currentYear || '',
-    gradeType: formData?.gradeType || 'cgpa',
-    gradeValue: formData?.gradeValue || '',
-    englishTest: formData?.englishTest || 'none',
+  const [formState, setFormState] = useState<Partial<FormState>>({
+    scholar_status: formData?.scholarshipType === 'scholarshipLoan' ? 'scholarshipLoan' : 'selfFunded',
+    curr_qualification: formData?.academicQualification || '',
+    inst_name: formData?.institutionType === 'malaysiaOrExchange' ? 'Malaysia/Exchange Program' : 'Abroad',
+    scope: formData?.studyScope || '',
+    curr_study_year: formData?.currentYear || '',
+    grade_status: formData?.gradeType || 'cgpa',
+    grade: formData?.gradeValue || '',
+    english_tests: formData?.englishTest || '',
+    english_score: 0,
   });
   
   // Load form data when component mounts
   useEffect(() => {
     if (formData && Object.keys(formData).length > 0) {
       setFormState({
-        scholarshipType: formData.scholarshipType || 'scholarshipLoan',
-        academicQualification: formData.academicQualification || '',
-        institutionType: formData.institutionType || 'malaysiaOrExchange',
-        studyScope: formData.studyScope || '',
-        enrollmentDate: formData.enrollmentDate || '',
-        expectedGraduationDate: formData.expectedGraduationDate || '',
-        currentYear: formData.currentYear || '',
-        gradeType: formData.gradeType || 'cgpa',
-        gradeValue: formData.gradeValue || '',
-        englishTest: formData.englishTest || 'none',
+        scholar_status: formData.scholarshipType === 'scholarshipLoan' ? 'scholarshipLoan' : 'selfFunded',
+        curr_qualification: formData.academicQualification || '',
+        inst_name: formData.institutionType === 'malaysiaOrExchange' ? 'Malaysia/Exchange Program' : 'Abroad',
+        scope: formData.studyScope || '',
+        curr_study_year: formData.currentYear || '',
+        grade_status: formData.gradeType || 'cgpa',
+        grade: formData.gradeValue || '',
+        english_tests: formData.englishTest || '',
+        english_score: 0,
       });
     }
   }, [formData]);
@@ -123,7 +167,7 @@ export default function CurrentStatus() {
   
   // Validate form based on current status
   const validateForm = () => {
-    if (!formState.scholarshipType) {
+    if (!formState.scholar_status) {
       toast({
         title: "Validation Error",
         description: "Please select your scholarship type.",
@@ -132,7 +176,7 @@ export default function CurrentStatus() {
       return false;
     }
     
-    if (!formState.academicQualification) {
+    if (!formState.curr_qualification) {
       toast({
         title: "Validation Error",
         description: "Please enter your academic qualification.",
@@ -141,7 +185,7 @@ export default function CurrentStatus() {
       return false;
     }
     
-    if (!formState.institutionType) {
+    if (!formState.inst_name) {
       toast({
         title: "Validation Error",
         description: "Please select your institution type.",
@@ -150,7 +194,7 @@ export default function CurrentStatus() {
       return false;
     }
     
-    if (!formState.studyScope) {
+    if (!formState.scope) {
       toast({
         title: "Validation Error",
         description: "Please enter your study scope.",
@@ -159,16 +203,16 @@ export default function CurrentStatus() {
       return false;
     }
     
-    if (!formState.enrollmentDate || !formState.expectedGraduationDate) {
+    if (!formState.curr_study_year) {
       toast({
         title: "Validation Error",
-        description: "Please enter both enrollment and expected graduation dates.",
+        description: "Please enter your current year.",
         variant: "destructive",
       });
       return false;
     }
     
-    if (!formState.gradeType) {
+    if (!formState.grade_status) {
       toast({
         title: "Validation Error",
         description: "Please select your grade type.",
@@ -177,7 +221,7 @@ export default function CurrentStatus() {
       return false;
     }
     
-    if (formState.gradeType !== 'noGrade' && !formState.gradeValue) {
+    if (formState.grade_status !== 'noGrade' && !formState.grade) {
       toast({
         title: "Validation Error",
         description: "Please enter your grade value.",
@@ -195,8 +239,20 @@ export default function CurrentStatus() {
     
     if (!validateForm()) return;
     
-    // Update the form context with the local state
-    updateFormData(formState);
+    // Convert form state to match FormContext format
+    const contextData = {
+      scholarshipType: formState.scholar_status === 'scholarshipLoan' ? 'scholarshipLoan' as const : 'selfFunded' as const,
+      academicQualification: formState.curr_qualification,
+      institutionType: formState.inst_name === 'Malaysia/Exchange Program' ? 'malaysiaOrExchange' as const : 'abroad' as const,
+      studyScope: formState.scope,
+      currentYear: formState.curr_study_year,
+      gradeType: formState.grade_status as 'cgpa' | 'grade' | 'others' | 'noGrade',
+      gradeValue: formState.grade,
+      englishTest: formState.english_tests as 'muet' | 'cefr' | 'toefl' | 'ielts' | 'none' | 'other',
+    };
+    
+    // Update the form context with the converted data
+    updateFormData(contextData);
     
     // Save the current step and proceed to the next one
     const success = await saveStep('current-status');
@@ -233,8 +289,8 @@ export default function CurrentStatus() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Scholarship Type</Label>
                 <RadioGroup 
-                  value={formState.scholarshipType || 'scholarshipLoan'} 
-                  onValueChange={(value) => handleRadioChange('scholarshipType', value)}
+                  value={formState.scholar_status || 'scholarshipLoan'} 
+                  onValueChange={(value) => handleRadioChange('scholar_status', value)}
                   className="flex space-x-4"
                 >
                   <div className="flex items-center space-x-2">
@@ -265,17 +321,21 @@ export default function CurrentStatus() {
               <div className="space-y-2">
                 <Label className="text-base font-medium">Academic Qualification</Label>
                 <Select 
-                  value={formState.academicQualification} 
-                  onValueChange={(value) => setFormState(prev => ({ ...prev, academicQualification: value }))}
+                  value={formState.curr_qualification} 
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, curr_qualification: value }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select your qualification" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="diploma">Diploma</SelectItem>
-                    <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                    <SelectItem value="master">Master's Degree</SelectItem>
-                    <SelectItem value="phd">PhD</SelectItem>
+                    {academicQualifications.map((qual) => (
+                      <SelectItem 
+                        key={getIdString(qual.Id)}
+                        value={getIdString(qual.Id)}
+                      >
+                        {qual.Name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -284,16 +344,16 @@ export default function CurrentStatus() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Institution Type</Label>
                 <RadioGroup 
-                  value={formState.institutionType || 'malaysiaOrExchange'} 
-                  onValueChange={(value) => handleRadioChange('institutionType', value)}
+                  value={formState.inst_name || 'Malaysia/Exchange Program'} 
+                  onValueChange={(value) => handleRadioChange('inst_name', value)}
                   className="flex space-x-4"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="malaysiaOrExchange" id="malaysia-exchange" />
+                    <RadioGroupItem value="Malaysia/Exchange Program" id="malaysia-exchange" />
                     <Label htmlFor="malaysia-exchange" className="font-normal">Malaysia/Exchange Program</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="abroad" id="abroad" />
+                    <RadioGroupItem value="Abroad" id="abroad" />
                     <Label htmlFor="abroad" className="font-normal">Abroad</Label>
                   </div>
                 </RadioGroup>
@@ -303,8 +363,8 @@ export default function CurrentStatus() {
               <div className="space-y-2">
                 <Label className="text-base font-medium">Study Scope</Label>
                 <Select 
-                  value={formState.studyScope} 
-                  onValueChange={(value) => setFormState(prev => ({ ...prev, studyScope: value }))}
+                  value={formState.scope} 
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, scope: value }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select your study scope" />
@@ -337,55 +397,19 @@ export default function CurrentStatus() {
               {/* Enrollment & Graduation Dates */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-base font-medium">Enrollment Date</Label>
+                  <Label className="text-base font-medium">Current Year</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
-                      type="date"
-                      name="enrollmentDate"
-                      value={formState.enrollmentDate}
-                      onChange={handleDateChange}
+                      type="text"
+                      name="curr_study_year"
+                      value={formState.curr_study_year}
+                      onChange={handleInputChange}
                       className="pl-10"
                       required
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-base font-medium">Expected Graduation Date</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="date"
-                      name="expectedGraduationDate"
-                      value={formState.expectedGraduationDate}
-                      onChange={handleDateChange}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Current Year */}
-              <div className="space-y-2">
-                <Label className="text-base font-medium">Current Year</Label>
-                <Select 
-                  value={formState.currentYear} 
-                  onValueChange={(value) => setFormState(prev => ({ ...prev, currentYear: value }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select your current year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Year 1</SelectItem>
-                    <SelectItem value="2">Year 2</SelectItem>
-                    <SelectItem value="3">Year 3</SelectItem>
-                    <SelectItem value="4">Year 4</SelectItem>
-                    <SelectItem value="5">Year 5</SelectItem>
-                    <SelectItem value="6">Year 6</SelectItem>
-                    <SelectItem value="7">Year 7</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </CardContent>
@@ -405,8 +429,8 @@ export default function CurrentStatus() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Grade Type</Label>
                 <RadioGroup 
-                  value={formState.gradeType || 'cgpa'} 
-                  onValueChange={(value) => handleRadioChange('gradeType', value)}
+                  value={formState.grade_status || 'cgpa'} 
+                  onValueChange={(value) => handleRadioChange('grade_status', value)}
                   className="grid grid-cols-1 md:grid-cols-2 gap-2"
                 >
                   <div className="flex items-center space-x-2">
@@ -427,15 +451,15 @@ export default function CurrentStatus() {
                   </div>
                 </RadioGroup>
 
-                {formState.gradeType !== 'noGrade' && (
+                {formState.grade_status !== 'noGrade' && (
                   <div className="pt-2 space-y-2">
                     <Label className="text-sm text-gray-600">Grade Value</Label>
                     <Input
                       type="text"
-                      name="gradeValue"
-                      value={formState.gradeValue}
+                      name="grade"
+                      value={formState.grade}
                       onChange={handleInputChange}
-                      placeholder={formState.gradeType === 'cgpa' ? "e.g. 3.5" : "e.g. A-"}
+                      placeholder={formState.grade_status === 'cgpa' ? "e.g. 3.5" : "e.g. A-"}
                       className="max-w-xs"
                     />
                   </div>
@@ -444,14 +468,14 @@ export default function CurrentStatus() {
               
               {/* English Test */}
               <div className="space-y-3">
-                <Label className="text-base font-medium">English Test</Label>
+                <Label className="text-base font-medium">What's the english equivalency test you've taken?</Label>
                 <div className="flex items-center mb-2">
                   <Languages className="h-4 w-4 text-gray-500 mr-2" />
                   <span className="text-sm text-gray-500">Select your English proficiency test</span>
                 </div>
                 <RadioGroup 
-                  value={formState.englishTest || 'none'} 
-                  onValueChange={(value) => handleRadioChange('englishTest', value)}
+                  value={formState.english_tests || 'none'} 
+                  onValueChange={(value) => handleRadioChange('english_tests', value)}
                   className="grid grid-cols-2 md:grid-cols-3 gap-2"
                 >
                   <div className="flex items-center space-x-2">
