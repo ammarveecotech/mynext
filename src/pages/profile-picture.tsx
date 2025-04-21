@@ -99,19 +99,11 @@ export default function ProfilePicture() {
   };
 
   return (
-    <FormLayout
-      title="Profile Picture"
-      description="Upload a profile picture to complete your profile."
-    >
+    <FormLayout title="Upload Profile Picture">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Upload a profile picture</h3>
-          <p className="text-sm text-gray-500">
-            This will be displayed on your profile. You can skip this step if you prefer.
-          </p>
-
-          <div className="flex items-center justify-center">
-            <div className="h-40 w-40 rounded-full relative overflow-hidden bg-gray-100 flex items-center justify-center">
+        <div className="flex flex-col space-y-6">
+          <div className="flex items-start">
+            <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
               {image ? (
                 <>
                   <img
@@ -122,52 +114,77 @@ export default function ProfilePicture() {
                   <button
                     type="button"
                     onClick={removeImage}
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 m-2"
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
                   >
-                    <XIcon className="h-4 w-4" />
+                    <XIcon className="h-3 w-3" />
                   </button>
                 </>
               ) : (
                 <UserIcon className="h-16 w-16 text-gray-400" />
               )}
             </div>
-          </div>
+            
+            <div className="ml-6 space-y-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={triggerFileInput}
+                className="flex items-center gap-2 text-purple-600 border-purple-600 hover:bg-purple-50"
+              >
+                <ImageIcon className="h-4 w-4" />
+                Upload Photo
+              </Button>
 
-          <div className="flex justify-center">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              ref={fileInputRef}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={triggerFileInput}
-              className="flex items-center gap-2"
-            >
-              <ImageIcon className="h-4 w-4" />
-              Select Image
-            </Button>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                ref={fileInputRef}
+                className="hidden"
+              />
+              
+              <p className="text-gray-500 text-sm max-w-lg">
+                Your profile picture will be visible in your CV when you apply for internships via the MyNext portal so make sure:
+              </p>
+              
+              <ol className="text-gray-600 text-sm space-y-1 list-decimal list-inside">
+                <li>It is a picture of yourself</li>
+                <li>It is clear and bright</li>
+              </ol>
+              
+              <p className="text-gray-500 text-sm">
+                You can change your profile picture at any time in the settings.
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-between pt-4">
+        <div className="flex justify-between pt-8">
           <Button
             type="button"
             onClick={handleBack}
-            variant="outline"
-            disabled={isSubmitting}
+            variant="ghost"
+            className="text-gray-500"
           >
             Back
           </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving...' : (image ? 'Next' : 'Skip')}
-          </Button>
+          <div className="flex space-x-4">
+            <Button
+              type="button"
+              variant="link"
+              onClick={() => router.push("/overview")}
+              className="text-gray-500"
+            >
+              Skip
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6"
+            >
+              {isSubmitting ? 'Saving...' : 'Next'}
+            </Button>
+          </div>
         </div>
       </form>
     </FormLayout>

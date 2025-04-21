@@ -48,7 +48,7 @@ const SidebarItem = ({ icon: Icon, label, href, active, completed, step }: Sideb
             ? "bg-[#6366f1] text-white" 
             : "bg-gray-200 text-gray-400"
       )}>
-        {completed ? <Icon className="h-4 w-4" /> : step}
+        <Icon className="h-4 w-4" />
       </div>
       <span className="font-medium">{label}</span>
       {!active && <ChevronRight className="h-4 w-4 ml-auto" />}
@@ -94,6 +94,32 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
     return step < currentStep;
   };
 
+  // Custom greetings for different pages
+  const getGreeting = () => {
+    if (currentPath === "/profile-picture") {
+      return "LOOKING GOOD!";
+    } else if (currentPath === "/preferences") {
+      return "GREAT JOB!";
+    } else if (currentPath === "/overview") {
+      return "FINAL STEP!";
+    } else {
+      return greeting || "Hi, bedump tan";
+    }
+  };
+
+  // Custom descriptions for different pages
+  const getDescription = () => {
+    if (currentPath === "/profile-picture") {
+      return "Let's make your profile even more personal.";
+    } else if (currentPath === "/preferences") {
+      return "Now, let's personalize your experience even further.";
+    } else if (currentPath === "/overview") {
+      return "You're almost there-just one more step to complete your profile. Take a moment to review your profile. Make sure everything looks great before you're all set to go!";
+    } else {
+      return description || "Let's keep building your profile together.";
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar */}
@@ -125,24 +151,10 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
 
         {/* User greeting */}
         <div className="px-6 py-4 z-10 relative">
-          {greeting ? (
-            <>
-              <h2 className="text-xl font-bold text-white">{greeting}</h2>
-              <p className="mt-2 text-sm text-gray-300">
-                {description}
-              </p>
-            </>
-          ) : (
-            <>
-              <h2 className="text-xl font-bold text-white">FINAL STEP!</h2>
-              <p className="mt-2 text-sm text-gray-300">
-                You're almost there-just one more step to complete your profile.
-              </p>
-              <p className="mt-2 text-sm text-gray-300">
-                Take a moment to review your profile. Make sure everything looks great before you're all set to go!
-              </p>
-            </>
-          )}
+          <h2 className="text-xl font-bold text-white">{getGreeting()}</h2>
+          <p className="mt-2 text-sm text-gray-300">
+            {getDescription()}
+          </p>
         </div>
 
         {/* Navigation */}
@@ -195,7 +207,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
         {/* Header with avatar */}
         <header className="bg-white px-8 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            {currentPath !== "/personal-information" && (
+            {(currentPath !== "/personal-information" && currentPath !== "/overview" && currentPath !== "/preferences" && currentPath !== "/profile-picture") && (
               <Link href={currentPath === "/preferences" ? "/current-status" : "/"} className="text-gray-500 mr-4">
                 &lt; Back
               </Link>
@@ -235,9 +247,22 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
           </DropdownMenu>
         </header>
         
-        <main className="max-w-5xl mx-auto py-8 px-8 bg-white my-8">
-          <h1 className="text-2xl font-bold text-purple-800 mb-6">{title}</h1>
-          {children}
+        <main className="max-w-5xl mx-auto py-8 px-8 bg-white">
+          {/* Center content and apply custom styling based on the page */}
+          <div className={cn(
+            "mx-auto",
+            (currentPath === "/preferences" || currentPath === "/profile-picture" || currentPath === "/overview") 
+              ? "max-w-3xl" 
+              : "max-w-5xl"
+          )}>
+            <h1 className={cn(
+              "text-2xl font-bold mb-6",
+              (currentPath === "/preferences" || currentPath === "/profile-picture" || currentPath === "/overview") 
+                ? "text-indigo-700 mb-8" 
+                : "text-purple-800"
+            )}>{title}</h1>
+            {children}
+          </div>
         </main>
       </div>
     </div>

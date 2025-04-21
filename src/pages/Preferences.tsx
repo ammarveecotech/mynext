@@ -129,47 +129,58 @@ export default function Preferences() {
     router.push("/current-status");
   };
 
-  const toggleSector = (sector: string) => {
-    setInterestedSectors((current: string[]) =>
+  const handleSectorClick = (sector: string) => {
+    setInterestedSectors((current) =>
       current.includes(sector)
-        ? current.filter((s: string) => s !== sector)
+        ? current.filter((s) => s !== sector)
         : [...current, sector]
     );
   };
 
-  const toggleRole = (role: string) => {
-    setInterestedRoles((current: string[]) =>
-      current.includes(role)
-        ? current.filter((r: string) => r !== role)
-        : [...current, role]
-    );
+  const handleRoleClick = (role: string) => {
+    // Limit to 3 roles max
+    setInterestedRoles((current) => {
+      if (current.includes(role)) {
+        return current.filter((r) => r !== role);
+      } else if (current.length < 3) {
+        return [...current, role];
+      }
+      return current;
+    });
   };
 
-  const toggleState = (state: string) => {
-    setPreferredStates((current: string[]) =>
-      current.includes(state)
-        ? current.filter((s: string) => s !== state)
-        : [...current, state]
-    );
+  const handleStateClick = (state: string) => {
+    // Limit to 3 states max
+    setPreferredStates((current) => {
+      if (current.includes(state)) {
+        return current.filter((s) => s !== state);
+      } else if (current.length < 3) {
+        return [...current, state];
+      }
+      return current;
+    });
   };
 
   return (
-    <FormLayout title="Preferences" currentStep={4}>
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-12">
+    <FormLayout title="Preferences">
+      <form onSubmit={handleSubmit} className="space-y-12">
         <div className="space-y-8">
           {/* Interested Sectors */}
           <div className="space-y-4">
             <p className="text-base font-medium">
               Please choose your <span className="text-purple-600">interested sectors</span>.
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="flex flex-wrap gap-3">
               {sectorOptions.map((sector) => (
                 <button
+                  type="button"
                   key={sector.value}
-                  onClick={() => toggleSector(sector.value)}
-                  className={`p-3 text-sm rounded-lg transition-colors ${interestedSectors.includes(sector.value)
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+                  onClick={() => handleSectorClick(sector.value)}
+                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                    interestedSectors.includes(sector.value)
+                      ? "bg-purple-100 text-purple-700 border border-purple-300"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                  }`}
                 >
                   {sector.label}
                 </button>
@@ -182,15 +193,18 @@ export default function Preferences() {
             <p className="text-base font-medium">
               Please choose <span className="text-purple-600">3 of your interested roles</span>.
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="flex flex-wrap gap-3">
               {roleOptions.map((role) => (
                 <button
+                  type="button"
                   key={role.value}
-                  onClick={() => toggleRole(role.value)}
+                  onClick={() => handleRoleClick(role.value)}
                   disabled={!interestedRoles.includes(role.value) && interestedRoles.length >= 3}
-                  className={`p-3 text-sm rounded-lg transition-colors ${interestedRoles.includes(role.value)
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                    interestedRoles.includes(role.value)
+                      ? "bg-purple-100 text-purple-700 border border-purple-300"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  }`}
                 >
                   {role.label}
                 </button>
@@ -203,15 +217,18 @@ export default function Preferences() {
             <p className="text-base font-medium">
               Please choose <span className="text-purple-600">3 of your preferred states</span>.
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="flex flex-wrap gap-3">
               {stateOptions.map((state) => (
                 <button
+                  type="button"
                   key={state.value}
-                  onClick={() => toggleState(state.value)}
+                  onClick={() => handleStateClick(state.value)}
                   disabled={!preferredStates.includes(state.value) && preferredStates.length >= 3}
-                  className={`p-3 text-sm rounded-lg transition-colors ${preferredStates.includes(state.value)
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                    preferredStates.includes(state.value)
+                      ? "bg-purple-100 text-purple-700 border border-purple-300"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  }`}
                 >
                   {state.label}
                 </button>
@@ -226,6 +243,7 @@ export default function Preferences() {
             className="px-8 text-gray-500 hover:text-gray-700"
             onClick={handleBack}
             type="button"
+            variant="ghost"
           >
             Back
           </Button>
