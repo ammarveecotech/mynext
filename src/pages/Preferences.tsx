@@ -228,7 +228,7 @@ export default function Preferences() {
 
   return (
     <FormLayout title="Preferences">
-      <form onSubmit={handleSubmit} className="space-y-12">
+      <form onSubmit={handleSubmit} className="space-y-12 max-w-full">
         <div className="space-y-8">
           {/* Interested Sectors */}
           <div className="space-y-4">

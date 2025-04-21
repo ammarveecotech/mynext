@@ -100,7 +100,7 @@ export default function ProfilePicture() {
 
   return (
     <FormLayout title="Upload Profile Picture">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-full">
         <div className="flex flex-col space-y-6">
           <div className="flex items-start">
             <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">

@@ -219,8 +219,12 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
         {/* Header with avatar */}
         <header className="bg-white px-8 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            {(currentPath !== "/personal-information" && currentPath !== "/overview" && currentPath !== "/preferences" && currentPath !== "/profile-picture") && (
-              <Link href={currentPath === "/preferences" ? "/current-status" : "/"} className="text-gray-500 mr-4">
+            {(currentPath !== "/personal-information") && (
+              <Link href={
+                currentPath === "/preferences" ? "/current-status" : 
+                currentPath === "/profile-picture" ? "/preferences" :
+                currentPath === "/overview" ? "/profile-picture" : "/"
+              } className="text-gray-500 mr-4">
                 &lt; Back
               </Link>
             )}
@@ -261,12 +265,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
         
         <main className="max-w-5xl mx-auto py-8 px-8 bg-white">
           {/* Center content and apply custom styling based on the page */}
-          <div className={cn(
-            "mx-auto",
-            (currentPath === "/preferences" || currentPath === "/profile-picture" || currentPath === "/overview") 
-              ? "max-w-3xl" 
-              : "max-w-5xl"
-          )}>
+          <div className="mx-auto max-w-5xl">
             <h1 className={cn(
               "text-2xl font-bold mb-6",
               (currentPath === "/preferences" || currentPath === "/profile-picture" || currentPath === "/overview") 

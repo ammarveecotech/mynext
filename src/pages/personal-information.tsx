@@ -11,7 +11,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { User, Calendar, Phone, Mail, MapPin, Heart } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
 import FormLayout from '@/components/FormLayout';
-import { ProfileUpload } from '@/components/ui/profile-upload';
 import { useFormData, type FormData, type MasterDataItem } from "@/hooks/useFormData";
 
 export default function PersonalInformation() {
@@ -193,36 +192,9 @@ export default function PersonalInformation() {
     }
   };
 
-  const handleImageUpload = async (file: File) => {
-    try {
-      // TODO: Implement actual file upload logic
-      const fakeUrl = URL.createObjectURL(file);
-      setFormState((prev) => ({ ...prev, profile_picture: fakeUrl }));
-      toast({
-        title: "Success",
-        description: "Profile picture uploaded successfully"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upload profile picture",
-        variant: "destructive"
-      });
-    }
-  };
-
   return (
     <FormLayout title="Personal Information" currentStep={1}>
       <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-8">
-        {/* Profile Picture Upload */}
-        <div className="mb-6">
-          <SectionHeading>Upload Profile Picture</SectionHeading>
-          <ProfileUpload
-            initialImage={formState.profile_picture}
-            onImageUpload={handleImageUpload}
-          />
-        </div>
-
         {/* Personal Information */}
         <div className="mb-6">
           <SectionHeading>Personal Information</SectionHeading>
