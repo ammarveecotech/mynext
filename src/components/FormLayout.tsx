@@ -28,6 +28,18 @@ interface SidebarItemProps {
 }
 
 const SidebarItem = ({ icon: Icon, label, href, active, completed, step }: SidebarItemProps) => {
+  // Create icon elements based on the icon type
+  const getStepIcon = () => {
+    switch(step) {
+      case 1: return <User className="h-4 w-4" />;
+      case 2: return <Briefcase className="h-4 w-4" />;
+      case 3: return <Heart className="h-4 w-4" />;
+      case 4: return <Camera className="h-4 w-4" />;
+      case 5: return <FileText className="h-4 w-4" />;
+      default: return <Icon className="h-4 w-4" />;
+    }
+  };
+
   return (
     <Link
       href={href}
@@ -48,7 +60,7 @@ const SidebarItem = ({ icon: Icon, label, href, active, completed, step }: Sideb
             ? "bg-[#6366f1] text-white" 
             : "bg-gray-200 text-gray-400"
       )}>
-        <Icon className="h-4 w-4" />
+        {getStepIcon()}
       </div>
       <span className="font-medium">{label}</span>
       {!active && <ChevronRight className="h-4 w-4 ml-auto" />}

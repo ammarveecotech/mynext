@@ -228,7 +228,7 @@ export default function PersonalInformation() {
           <SectionHeading>Personal Information</SectionHeading>
           <div className="grid grid-cols-2 gap-6 mt-4">
             {/* Personal Details Section */}
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="p-4">
               <div className="flex items-center mb-4">
                 <User className="h-5 w-5 text-[#6366f1] mr-2" />
                 <h3 className="text-md font-medium">Personal Details</h3>
@@ -322,7 +322,7 @@ export default function PersonalInformation() {
             </div>
 
             {/* Contact Information Section */}
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="p-4">
               <div className="flex items-center mb-4">
                 <Phone className="h-5 w-5 text-[#6366f1] mr-2" />
                 <h3 className="text-md font-medium">Contact Information</h3>
@@ -449,7 +449,7 @@ export default function PersonalInformation() {
         {/* Additional Information */}
         <div className="mb-6">
           <SectionHeading>Additional Information</SectionHeading>
-          <div className="bg-gray-50 rounded-lg p-6 mt-4">
+          <div className="p-4 mt-4">
             <div className="space-y-6">
               {/* OKU Status */}
               <div className="space-y-3">
