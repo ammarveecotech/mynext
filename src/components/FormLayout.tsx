@@ -194,7 +194,13 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
       <div className="flex-1 overflow-auto bg-white">
         {/* Header with avatar */}
         <header className="bg-white px-8 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">{title}</h1>
+          <div className="flex items-center">
+            {currentPath !== "/personal-information" && (
+              <Link href={currentPath === "/preferences" ? "/current-status" : "/"} className="text-gray-500 mr-4">
+                &lt; Back
+              </Link>
+            )}
+          </div>
           
           {/* User avatar and dropdown */}
           <DropdownMenu>
@@ -230,6 +236,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
         </header>
         
         <main className="max-w-5xl mx-auto py-8 px-8 bg-white my-8">
+          <h1 className="text-2xl font-bold text-purple-800 mb-6">{title}</h1>
           {children}
         </main>
       </div>

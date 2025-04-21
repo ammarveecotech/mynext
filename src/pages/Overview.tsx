@@ -64,121 +64,118 @@ export default function Overview() {
       title="Profile Overview"
       description="Review your information before submitting."
     >
-      <form onSubmit={handleSubmit}>
-        <div className="max-w-5xl mx-auto space-y-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold">Profile Overview</h1>
-          </div>
-
-          <Separator />
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-12">
+        <div className="space-y-8">
+          <h1 className="text-2xl font-semibold text-center text-purple-600">Profile Overview</h1>
 
           {/* Personal Information */}
-          <div>
-            <div className="flex items-center justify-between mb-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
               <h2 className="text-xl font-medium">Personal Information</h2>
               <Button
                 variant="link"
-                className="text-purple-600 hover:text-purple-700"
+                className="text-red-500 hover:text-red-600 text-sm font-normal"
                 onClick={() => router.push("/personal-information")}
               >
                 Edit
               </Button>
             </div>
 
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-4">
               <div className="w-24 h-24 bg-purple-600 rounded-full flex items-center justify-center">
                 <UserIcon className="w-12 h-12 text-white" />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-6">
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Identification (Malaysian IC)</p>
-                <p className="text-purple-600">{formData?.identificationNumber || "-"}</p>
+                <p className="text-sm text-gray-500">Identification (Malaysian IC)</p>
+                <p className="text-purple-600">{formData?.id_number || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Display Name</p>
-                <p className="text-purple-600">{formData?.displayName || "-"}</p>
+                <p className="text-sm text-gray-500">Display Name</p>
+                <p className="text-purple-600">{formData?.display_name || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Full Name (as per passport or IC)</p>
-                <p className="text-purple-600">{formData?.fullName || "-"}</p>
+                <p className="text-sm text-gray-500">Full Name (as per passport or IC)</p>
+                <p className="text-purple-600">{formData?.display_name || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Date of Birth</p>
-                <p className="text-purple-600">{formData?.dateOfBirth || "-"}</p>
+                <p className="text-sm text-gray-500">Date of Birth</p>
+                <p className="text-purple-600">{formData?.dob ? new Date(formData.dob).toLocaleDateString() : "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Gender</p>
+                <p className="text-sm text-gray-500">Gender</p>
                 <p className="text-purple-600">{formData?.gender || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Email</p>
-                <p className="text-purple-600">{formData?.email || "-"}</p>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="text-purple-600">{session?.user?.email || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Phone Number</p>
-                <p className="text-purple-600">{formData?.phoneNumber || "-"}</p>
+                <p className="text-sm text-gray-500">Phone Number</p>
+                <p className="text-purple-600">{`${formData?.mob_code || ""} ${formData?.mob_number || "-"}`}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Race</p>
+                <p className="text-sm text-gray-500">Race</p>
                 <p className="text-purple-600">{formData?.race || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Nationality</p>
+                <p className="text-sm text-gray-500">Nationality</p>
                 <p className="text-purple-600">{formData?.nationality || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">State</p>
+                <p className="text-sm text-gray-500">State</p>
                 <p className="text-purple-600">{formData?.state || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Where do you stay?</p>
-                <p className="text-purple-600">{formData?.country || "-"}</p>
+                <p className="text-sm text-gray-500">Where do you stay?</p>
+                <p className="text-purple-600">{formData?.curr_country || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">Postcode</p>
-                <p className="text-purple-600">{formData?.postcode || "-"}</p>
+                <p className="text-sm text-gray-500">Postcode</p>
+                <p className="text-purple-600">{formData?.postalcode || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">City</p>
+                <p className="text-sm text-gray-500">City</p>
                 <p className="text-purple-600">{formData?.city || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">OKU</p>
-                <p className="text-purple-600">{formData?.isOKU ? "Yes" : "No"}</p>
+                <p className="text-sm text-gray-500">OKU</p>
+                <p className="text-purple-600">{formData?.disability_status ? "Yes" : "No"}</p>
               </div>
             </div>
           </div>
 
           {/* Current Status */}
-          <div>
-            <div className="flex items-center justify-between mb-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
               <h2 className="text-xl font-medium">Current Status Detail</h2>
               <Button
                 variant="link"
-                className="text-purple-600 hover:text-purple-700"
+                className="text-red-500 hover:text-red-600 text-sm font-normal"
                 onClick={() => router.push("/current-status")}
               >
                 Edit
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 gap-y-6">
+            <div className="space-y-6">
               <div>
-                <p className="text-sm text-gray-500 mb-1">What's your scholarship type?</p>
-                <p className="text-purple-600">{formData?.scholarshipType || "-"}</p>
+                <p className="text-sm text-gray-500">What's your scholarship type?</p>
+                <p className="text-purple-600">{formData?.scholar_status || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">What's your current academic qualification?</p>
-                <p className="text-purple-600">{formData?.academicQualification || "-"}</p>
+                <p className="text-sm text-gray-500">What's your current academic qualification?</p>
+                <p className="text-purple-600">{formData?.curr_qualification || "-"}</p>
               </div>
             </div>
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between">
+          <div className="flex justify-between pt-4">
             <Button
+              variant="ghost"
               className="text-gray-500 hover:text-gray-700"
               onClick={handleBack}
               type="button"
