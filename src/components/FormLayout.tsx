@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { useFormProgress } from "@/context/FormProgressContext";
+import { useFormData } from "@/hooks/useFormData";
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -25,9 +27,10 @@ interface SidebarItemProps {
   active: boolean;
   completed?: boolean;
   step: number;
+  progressPercentage?: number;
 }
 
-const SidebarItem = ({ icon: Icon, label, href, active, completed, step }: SidebarItemProps) => {
+const SidebarItem = ({ icon: Icon, label, href, active, completed, step, progressPercentage = 0 }: SidebarItemProps) => {
   // Create icon elements based on the icon type
   const getStepIcon = () => {
     switch(step) {
@@ -40,6 +43,9 @@ const SidebarItem = ({ icon: Icon, label, href, active, completed, step }: Sideb
     }
   };
 
+  // Determine if the step should be highlighted based on progress
+  const isHighlighted = progressPercentage >= 80 || completed;
+
   return (
     <Link
       href={href}
@@ -47,16 +53,16 @@ const SidebarItem = ({ icon: Icon, label, href, active, completed, step }: Sideb
         "flex items-center space-x-3 py-3 px-4 rounded-md transition-colors relative",
         active
           ? "bg-[#6366f1] text-white"
-          : completed 
+          : isHighlighted 
             ? "text-white hover:bg-[#1c2c4e]" 
-            : "text-gray-400 hover:bg-[#1c2c4e] cursor-not-allowed"
+            : "text-gray-400 hover:bg-[#1c2c4e]"
       )}
     >
       <div className={cn(
         "flex items-center justify-center h-8 w-8 rounded-full",
         active 
           ? "bg-white text-[#6366f1]" 
-          : completed 
+          : isHighlighted 
             ? "bg-[#6366f1] text-white" 
             : "bg-gray-200 text-gray-400"
       )}>
@@ -80,6 +86,61 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
   const router = useRouter();
   const { data: session } = useSession();
   const currentPath = router.pathname;
+  const { progress, updateProgress } = useFormProgress();
+  const { formData, fetchFormData } = useFormData();
+  
+  // Track if component is mounted (client-side only)
+  const [isMounted, setIsMounted] = useState(false);
+  const dataLoadedRef = React.useRef(false);
+  const loadingDataRef = React.useRef(false);
+  
+  // Function to load form data only once
+  const loadFormDataOnce = React.useCallback(async () => {
+    // If already loading or loaded, don't load again
+    if (loadingDataRef.current || dataLoadedRef.current) {
+      return;
+    }
+    
+    loadingDataRef.current = true;
+    console.log("FormLayout - Fetching form data (once)");
+    
+    try {
+      const data = await fetchFormData();
+      console.log("FormLayout - Form data fetched:", !!data);
+      
+      if (data) {
+        console.log("FormLayout - Updating progress with form data");
+        updateProgress(data);
+      }
+      
+      // Mark as loaded so we don't try again
+      dataLoadedRef.current = true;
+    } catch (error) {
+      console.error("FormLayout - Error loading form data:", error);
+    } finally {
+      loadingDataRef.current = false;
+    }
+  }, [fetchFormData, updateProgress]);
+  
+  // This effect runs only once on client-side
+  useEffect(() => {
+    console.log("FormLayout - Setting isMounted to true");
+    setIsMounted(true);
+  }, []);
+  
+  // Load data only once when component is mounted
+  useEffect(() => {
+    // Skip server-side execution
+    if (typeof window === 'undefined') {
+      console.log("FormLayout - Running on server, skipping fetch");
+      return;
+    }
+    
+    if (isMounted) {
+      console.log("FormLayout - Component mounted, loading data once");
+      loadFormDataOnce();
+    }
+  }, [isMounted, loadFormDataOnce]);
 
   // Get username from session or set default
   const username = session?.user?.name || "user";
@@ -98,15 +159,44 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
     await signOut({ redirect: true, callbackUrl: '/signin' });
   };
 
-  // Calculate progress percentage based on current step (5 steps total)
-  const progressPercentage = (currentStep / 5) * 100;
+  // Calculate progress percentages for each step and overall
+  const { 
+    personalInfoProgress, 
+    currentStatusProgress, 
+    preferencesProgress, 
+    profilePictureProgress, 
+    overallProgress, 
+    stepsCompleted 
+  } = progress;
   
-  // Determine which steps are completed
+  // Determine which steps are completed based on form progress
   const isStepCompleted = (step: number) => {
-    return step < currentStep;
+    if (step < currentStep) {
+      return true;
+    }
+    
+    // Otherwise check field completion
+    switch(step) {
+      case 1: return stepsCompleted.includes('personal-information');
+      case 2: return stepsCompleted.includes('current-status');
+      case 3: return stepsCompleted.includes('preferences');
+      case 4: return stepsCompleted.includes('profile-picture');
+      default: return false;
+    }
   };
 
-  // Custom greetings for different pages
+  // Get progress percentage for a specific step
+  const getStepProgress = (step: number): number => {
+    switch(step) {
+      case 1: return personalInfoProgress;
+      case 2: return currentStatusProgress;
+      case 3: return preferencesProgress;
+      case 4: return profilePictureProgress;
+      default: return 0;
+    }
+  };
+
+  // Custom greetings for different pages - with consistent height (3 lines)
   const getGreeting = () => {
     if (currentPath === "/profile-picture") {
       return "LOOKING GOOD!";
@@ -119,17 +209,21 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
     }
   };
 
-  // Custom descriptions for different pages
+  // Custom descriptions for different pages - with consistent height (3 lines)
   const getDescription = () => {
-    if (currentPath === "/profile-picture") {
-      return "Let's make your profile even more personal.";
-    } else if (currentPath === "/preferences") {
-      return "Now, let's personalize your experience even further.";
-    } else if (currentPath === "/overview") {
-      return "You're almost there-just one more step to complete your profile. Take a moment to review your profile. Make sure everything looks great before you're all set to go!";
-    } else {
-      return description || "Let's keep building your profile together.";
-    }
+    return (
+      <div className="h-24 flex items-center">
+        <p className="line-clamp-3">
+          {currentPath === "/profile-picture" ? 
+            "Let's make your profile even more personal. Upload a clear photo to help others recognize you easily." : 
+          currentPath === "/preferences" ? 
+            "Now, let's personalize your experience even further. Tell us more about your interests and preferences." : 
+          currentPath === "/overview" ? 
+            "You're almost there-just one more step to complete your profile. Take a moment to review your profile information." : 
+          description || "Let's keep building your profile together. Fill in your details to help us personalize your experience."}
+        </p>
+      </div>
+    );
   };
 
   return (
@@ -156,17 +250,15 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
         <div className="px-6 py-4">
           <div className="flex justify-between text-sm mb-2">
             <span className="font-medium text-white">Profile Completion</span>
-            <span className="text-white font-medium">{Math.round(progressPercentage)}%</span>
+            <span className="text-white font-medium">{Math.round(overallProgress)}%</span>
           </div>
-          <Progress value={progressPercentage} className="h-2 bg-gray-700" indicatorClassName="bg-[#6366f1]" />
+          <Progress value={overallProgress} className="h-2 bg-gray-700" indicatorClassName="bg-[#6366f1]" />
         </div>
 
         {/* User greeting */}
         <div className="px-6 py-4 z-10 relative">
           <h2 className="text-xl font-bold text-white">{getGreeting()}</h2>
-          <p className="mt-2 text-sm text-gray-300">
-            {getDescription()}
-          </p>
+          {getDescription()}
         </div>
 
         {/* Navigation */}
@@ -178,6 +270,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
             active={currentPath === "/personal-information"}
             completed={isStepCompleted(1)}
             step={1}
+            progressPercentage={getStepProgress(1)}
           />
           <SidebarItem
             icon={Briefcase}
@@ -186,6 +279,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
             active={currentPath === "/current-status"}
             completed={isStepCompleted(2)}
             step={2}
+            progressPercentage={getStepProgress(2)}
           />
           <SidebarItem
             icon={Heart}
@@ -194,6 +288,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
             active={currentPath === "/preferences"}
             completed={isStepCompleted(3)}
             step={3}
+            progressPercentage={getStepProgress(3)}
           />
           <SidebarItem
             icon={Camera}
@@ -202,6 +297,7 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
             active={currentPath === "/profile-picture"}
             completed={isStepCompleted(4)}
             step={4}
+            progressPercentage={getStepProgress(4)}
           />
           <SidebarItem
             icon={FileText}
@@ -248,33 +344,26 @@ const FormLayout = ({ children, title, greeting, description, currentStep = 1 }:
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                Profile
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+                Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-red-600" onClick={handleSignOut}>
+              <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
         
-        <main className="max-w-5xl mx-auto py-8 px-8 bg-white">
-          {/* Center content and apply custom styling based on the page */}
-          <div className="mx-auto max-w-5xl">
-            <h1 className={cn(
-              "text-2xl font-bold mb-6",
-              (currentPath === "/preferences" || currentPath === "/profile-picture" || currentPath === "/overview") 
-                ? "text-indigo-700 mb-8" 
-                : "text-purple-800"
-            )}>{title}</h1>
-            {children}
-          </div>
-        </main>
+        {/* Main content */}
+        <div className="px-8 py-6">
+          <h1 className="text-2xl font-bold mb-6">{title}</h1>
+          {children}
+        </div>
       </div>
     </div>
   );

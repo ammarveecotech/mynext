@@ -12,6 +12,7 @@ import { User, Calendar, Phone, Mail, MapPin, Heart } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
 import FormLayout from '@/components/FormLayout';
 import { useFormData, type FormData, type MasterDataItem } from "@/hooks/useFormData";
+import React from 'react';
 
 export default function PersonalInformation() {
   const router = useRouter();
@@ -38,56 +39,62 @@ export default function PersonalInformation() {
   // Local form state
   const [formState, setFormState] = useState<FormData>({});
   const [loading, setLoading] = useState(false);
+  const dataLoadedRef = React.useRef(false);
   
-  // Load form data when component mounts
-  useEffect(() => {
-    const loadFormData = async () => {
-      try {
-        setLoading(true);
-        // Fetch form data from API
-        const data = await fetchFormData();
-        
-        // Initialize form state with fetched data
-        if (data) {
-          setFormState(data);
-        }
-      } catch (error) {
-        console.error('Error loading form data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load your information. Please try again.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    // Only load data if user is authenticated
-    if (status === 'authenticated') {
-      loadFormData();
-    }
-  }, [status]);
-  
-  // Check authentication
+  // Check authentication only
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/signin');
+      router.push('/signin');
     }
   }, [status, router]);
   
-  // Don't render the form until we confirm authentication
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-  
-  if (status === 'unauthenticated') {
-    return null;
-  }
+  // Load form data in a separate effect with proper control
+  useEffect(() => {
+    // Only run if authenticated and not already loaded/loading
+    if (status === 'authenticated' && !dataLoadedRef.current) {
+      dataLoadedRef.current = true;
+      
+      // Use a flag to prevent multiple calls
+      let isActive = true;
+      
+      const loadData = async () => {
+        if (!isActive) return;
+        
+        try {
+          setLoading(true);
+          console.log("PersonalInfo - Fetching form data");
+          // Fetch form data from API
+          const data = await fetchFormData();
+          console.log("PersonalInfo - Form data fetched");
+          
+          // Initialize form state with fetched data
+          if (data && isActive) {
+            setFormState(data);
+          }
+        } catch (error) {
+          console.error('Error loading form data:', error);
+          if (isActive) {
+            toast({
+              title: "Error",
+              description: "Failed to load your information. Please try again.",
+              variant: "destructive"
+            });
+          }
+        } finally {
+          if (isActive) {
+            setLoading(false);
+          }
+        }
+      };
+      
+      loadData();
+      
+      // Cleanup function to prevent state updates if component unmounts
+      return () => {
+        isActive = false;
+      };
+    }
+  }, [status, fetchFormData, toast]);
   
   // Fetch master data (countries, states, cities)
   const fetchMasterData = async (type: string, parentId: string, parentField?: string) => {
@@ -191,6 +198,19 @@ export default function PersonalInformation() {
       });
     }
   };
+
+  // Don't render the form until we confirm authentication
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   return (
     <FormLayout title="Personal Information" currentStep={1}>

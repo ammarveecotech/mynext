@@ -62,10 +62,12 @@ export const useFormData = () => {
 
   // Fetch the user's form data
   const fetchFormData = useCallback(async () => {
+    console.log("useFormData - fetchFormData called");
     try {
       setLoading(true);
 
       const userId = session?.user?.id;
+      console.log("useFormData - userId:", userId);
       if (!userId) {
         console.log("No user ID available");
         return { user_id: "" };
@@ -76,6 +78,7 @@ export const useFormData = () => {
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
       try {
+        console.log(`useFormData - Fetching from /api/onboard-form/get-data?userId=${userId}`);
         const response = await fetch(
           `/api/onboard-form/get-data?userId=${userId}`,
           {
@@ -84,6 +87,7 @@ export const useFormData = () => {
         );
 
         clearTimeout(timeoutId);
+        console.log("useFormData - API response status:", response.status);
 
         // If we get a 404, it means the user doesn't have form data yet
         if (response.status === 404) {
@@ -102,6 +106,7 @@ export const useFormData = () => {
         }
 
         const result = await response.json();
+        console.log("useFormData - API response parsed:", result.success);
 
         if (result.success && result.data) {
           console.log("Successfully fetched form data");
@@ -132,7 +137,7 @@ export const useFormData = () => {
     } finally {
       setLoading(false);
     }
-  });
+  }, [session?.user?.id]);
 
   // Save form data
   const saveFormData = async (data: FormData, nextPage?: string) => {

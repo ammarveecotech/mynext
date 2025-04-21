@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FormProvider } from "@/context/FormContext";
+import { FormProgressProvider } from "@/context/FormProgressContext";
 import { SessionProvider } from "next-auth/react";
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
@@ -17,7 +18,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
           <Toaster />
           <Sonner />
           <FormProvider>
-            <Component {...pageProps} />
+            <FormProgressProvider>
+              <Component {...pageProps} />
+            </FormProgressProvider>
           </FormProvider>
         </TooltipProvider>
       </QueryClientProvider>
