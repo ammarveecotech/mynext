@@ -223,14 +223,19 @@ const MasterAcademicQualificationSchema = new Schema({
 });
 
 // Master Scope of Studies (master_scope_of_studies)
-export interface IMasterScopeOfStudy extends IMasterBase {
-  UniversityId?: number;
-  CreatedDate?: string;
-  UpdatedDate?: string;
+export interface IMasterScopeOfStudy {
+  _id?: string;
+  Id: number;
+  CreatedDate: string;
+  IsDeleted: boolean;
+  Name: string;
+  UniversityId: number;
+  UpdatedDate: string;
 }
 
 const MasterScopeOfStudySchema = new Schema({
-  Id: { type: Number },
+  _id: { type: String },
+  Id: { type: Number, required: true },
   CreatedDate: { type: String },
   IsDeleted: { type: Boolean, default: false },
   Name: { type: String, required: true },

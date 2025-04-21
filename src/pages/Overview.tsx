@@ -5,6 +5,7 @@ import { useFormData } from "@/hooks/useFormData";
 import FormLayout from "@/components/FormLayout";
 import { Button } from "@/components/ui/button";
 import { Check, User as UserIcon } from "lucide-react";
+import { ICoreModelOnboardform } from '@/models/CoreModelOnboardform';
 
 export default function Overview() {
   const router = useRouter();
@@ -27,24 +28,69 @@ export default function Overview() {
     setIsSubmitting(true);
 
     try {
-      // Submit the form data
+      // Convert form data to match the database schema
+      const submissionData: Partial<ICoreModelOnboardform> = {
+        // Personal Information
+        id_type: formData?.id_type || 1,
+        id_number: formData?.id_number,
+        display_name: formData?.display_name,
+        gender: formData?.gender,
+        dob: formData?.dob ? new Date(formData.dob) : undefined,
+        mob_code: formData?.mob_code,
+        mob_number: formData?.mob_number,
+        nationality: formData?.nationality,
+        race: formData?.race,
+        curr_country: formData?.curr_country,
+        state: formData?.state,
+        city: formData?.city,
+        postalcode: formData?.postalcode,
+        disability_status: formData?.disability_status,
+        disability_code: formData?.disability_code,
+        talent_status: formData?.talent_status,
+        
+        // Current Status
+        scholar_status: formData?.scholar_status,
+        scholar_data: formData?.scholar_data,
+        curr_qualification: formData?.curr_qualification,
+        inst_name: formData?.inst_name,
+        university: formData?.university,
+        campus: formData?.campus,
+        faculty: formData?.faculty,
+        study_program: formData?.study_program,
+        inst_country: formData?.inst_country,
+        scope: formData?.scope,
+        curr_study_year: formData?.curr_study_year,
+        grade_status: formData?.grade_status,
+        grade: formData?.grade,
+        english_tests: formData?.english_tests,
+        english_score: formData?.english_score,
+        
+        // User ID
+        user_id: session?.user?.id,
+        
+        // Step tracking
+        step: 4, // Final step
+      };
+
+      // Submit to API
       const response = await fetch("/api/onboard-form/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          userId: session?.user?.id,
-        }),
+        body: JSON.stringify(submissionData),
       });
 
       if (response.ok) {
         router.push("/success");
       } else {
-        console.error("Failed to submit form");
+        const errorData = await response.json();
+        console.error("Failed to submit form:", errorData);
+        throw new Error(errorData.message || 'Failed to submit form');
       }
     } catch (error) {
       console.error("Error submitting form:", error);
+      // You might want to show an error toast here
     } finally {
       setIsSubmitting(false);
     }
@@ -65,6 +111,7 @@ export default function Overview() {
               variant="link"
               className="text-red-500 hover:text-red-600 text-sm font-normal p-0"
               onClick={() => router.push("/personal-information")}
+              type="button"
             >
               Edit
             </Button>
@@ -181,6 +228,7 @@ export default function Overview() {
               variant="link"
               className="text-red-500 hover:text-red-600 text-sm font-normal p-0"
               onClick={() => router.push("/current-status")}
+              type="button"
             >
               Edit
             </Button>

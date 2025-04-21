@@ -12,7 +12,7 @@ import { useForm } from '@/context/FormContext';
 import { useToast } from '@/components/ui/use-toast';
 import { useSession } from 'next-auth/react';
 import { BookOpen, GraduationCap, Calendar, Award, Languages } from 'lucide-react';
-import { IMasterAcademicQualification, IMasterEnglishEquivalentTestType } from '@/models/MasterTables';
+import { IMasterAcademicQualification, IMasterEnglishEquivalentTestType, IMasterScopeOfStudy, IMasterScholarshipType } from '@/models/MasterTables';
 
 // Define the form state interface to match CoreModelOnboardform
 interface FormState {
@@ -43,12 +43,14 @@ export default function CurrentStatus() {
   const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
   
-  // Add state for academic qualifications
+  // Add state for master data
   const [academicQualifications, setAcademicQualifications] = useState<IMasterAcademicQualification[]>([]);
   const [englishTests, setEnglishTests] = useState<IMasterEnglishEquivalentTestType[]>([]);
+  const [studyScopes, setStudyScopes] = useState<IMasterScopeOfStudy[]>([]);
+  const [scholarshipTypes, setScholarshipTypes] = useState<IMasterScholarshipType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch academic qualifications and English tests
+  // Fetch master data
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
@@ -65,6 +67,18 @@ export default function CurrentStatus() {
         if (!testResponse.ok) throw new Error('Failed to fetch English tests');
         const testData = await testResponse.json();
         setEnglishTests(testData);
+
+        // Fetch study scopes
+        const scopeResponse = await fetch('/api/master-data/study-scopes');
+        if (!scopeResponse.ok) throw new Error('Failed to fetch study scopes');
+        const scopeData = await scopeResponse.json();
+        setStudyScopes(scopeData);
+
+        // Fetch scholarship types
+        const scholarshipResponse = await fetch('/api/master-data/scholarship-types');
+        if (!scholarshipResponse.ok) throw new Error('Failed to fetch scholarship types');
+        const scholarshipData = await scholarshipResponse.json();
+        setScholarshipTypes(scholarshipData);
       } catch (error) {
         console.error('Error fetching master data:', error);
         toast({
@@ -285,24 +299,28 @@ export default function CurrentStatus() {
             <Separator className="mb-6" />
             
             {/* Scholarship Type */}
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Scholarship Type</Label>
-                <RadioGroup 
-                  value={formState.scholar_status || 'scholarshipLoan'} 
-                  onValueChange={(value) => handleRadioChange('scholar_status', value)}
-                  className="flex space-x-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="scholarshipLoan" id="scholarship-loan" />
-                    <Label htmlFor="scholarship-loan" className="font-normal">Scholarship/Loan</Label>
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Scholarship Type</Label>
+              <RadioGroup 
+                value={formState.scholar_status} 
+                onValueChange={(value) => setFormState(prev => ({ ...prev, scholar_status: value }))}
+                className="flex flex-wrap gap-4"
+              >
+                {scholarshipTypes.map((type) => (
+                  <div key={type.Id?.toString()} className="flex items-center space-x-2">
+                    <RadioGroupItem 
+                      value={type.Id?.toString() || ''} 
+                      id={`scholarship-${type.Id}`} 
+                    />
+                    <Label 
+                      htmlFor={`scholarship-${type.Id}`} 
+                      className="font-normal"
+                    >
+                      {type.Title}
+                    </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="selfFunded" id="self-funded" />
-                    <Label htmlFor="self-funded" className="font-normal">Self-Funded</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+                ))}
+              </RadioGroup>
             </div>
           </CardContent>
         </Card>
@@ -370,13 +388,14 @@ export default function CurrentStatus() {
                     <SelectValue placeholder="Select your study scope" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="engineering">Engineering</SelectItem>
-                    <SelectItem value="medicine">Medicine</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="arts">Arts</SelectItem>
-                    <SelectItem value="science">Science</SelectItem>
-                    <SelectItem value="law">Law</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
+                    {studyScopes.map((scope) => (
+                      <SelectItem 
+                        key={scope._id || scope.Id.toString()}
+                        value={scope.Id.toString()}
+                      >
+                        {scope.Name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -398,17 +417,17 @@ export default function CurrentStatus() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-base font-medium">Current Year</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      type="text"
-                      name="curr_study_year"
-                      value={formState.curr_study_year}
-                      onChange={handleInputChange}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <Input
+                    type="number"
+                    name="curr_study_year"
+                    value={formState.curr_study_year}
+                    onChange={handleInputChange}
+                    min="1"
+                    max="6"
+                    placeholder="Enter your current year of study (1-6)"
+                    className="w-full"
+                    required
+                  />
                 </div>
               </div>
             </div>
