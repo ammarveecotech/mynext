@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import FormLayout from '@/components/FormLayout';
 import { useForm } from '@/context/FormContext';
 import { useToast } from '@/components/ui/use-toast';
 import { useSession } from 'next-auth/react';
+import { BookOpen, GraduationCap, Calendar, Award, Languages } from 'lucide-react';
 
 // Define the form state interface
 interface CurrentStatusFormState {
@@ -205,237 +212,292 @@ export default function CurrentStatus() {
   };
   
   return (
-    <FormLayout title="Current Status">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Scholarship Type */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-medium">What is your scholarship type?</h2>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="scholarshipType"
-                checked={formState.scholarshipType === 'scholarshipLoan'}
-                onChange={() => handleRadioChange('scholarshipType', 'scholarshipLoan')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Scholarship/Loan</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="scholarshipType"
-                checked={formState.scholarshipType === 'selfFunded'}
-                onChange={() => handleRadioChange('scholarshipType', 'selfFunded')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Self-Funded</span>
-            </label>
-          </div>
-        </div>
+    <FormLayout title="Current Status" currentStep={2}>
+      <div className="mb-6">
+        <h2 className="text-lg font-medium text-gray-700 mb-1">Tell us about your education</h2>
+        <p className="text-sm text-gray-500">Please provide details about your current academic status.</p>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Scholarship Information Section */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center mb-4">
+              <Award className="h-5 w-5 text-[#6366f1] mr-2" />
+              <h3 className="text-md font-medium">Scholarship Information</h3>
+            </div>
+            <Separator className="mb-6" />
+            
+            {/* Scholarship Type */}
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Scholarship Type</Label>
+                <RadioGroup 
+                  value={formState.scholarshipType || 'scholarshipLoan'} 
+                  onValueChange={(value) => handleRadioChange('scholarshipType', value)}
+                  className="flex space-x-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="scholarshipLoan" id="scholarship-loan" />
+                    <Label htmlFor="scholarship-loan" className="font-normal">Scholarship/Loan</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="selfFunded" id="self-funded" />
+                    <Label htmlFor="self-funded" className="font-normal">Self-Funded</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
-        {/* Academic Qualification */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Academic Qualification
-          </label>
-          <input
-            type="text"
-            name="academicQualification"
-            value={formState.academicQualification}
-            onChange={handleInputChange}
-            placeholder="Enter your academic qualification"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
+        {/* Academic Information Section */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center mb-4">
+              <GraduationCap className="h-5 w-5 text-[#6366f1] mr-2" />
+              <h3 className="text-md font-medium">Academic Information</h3>
+            </div>
+            <Separator className="mb-6" />
+            
+            <div className="space-y-6">
+              {/* Academic Qualification */}
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Academic Qualification</Label>
+                <Select 
+                  value={formState.academicQualification} 
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, academicQualification: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select your qualification" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diploma">Diploma</SelectItem>
+                    <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
+                    <SelectItem value="master">Master's Degree</SelectItem>
+                    <SelectItem value="phd">PhD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Institution Type */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Institution Type</Label>
+                <RadioGroup 
+                  value={formState.institutionType || 'malaysiaOrExchange'} 
+                  onValueChange={(value) => handleRadioChange('institutionType', value)}
+                  className="flex space-x-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="malaysiaOrExchange" id="malaysia-exchange" />
+                    <Label htmlFor="malaysia-exchange" className="font-normal">Malaysia/Exchange Program</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="abroad" id="abroad" />
+                    <Label htmlFor="abroad" className="font-normal">Abroad</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              {/* Study Scope */}
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Study Scope</Label>
+                <Select 
+                  value={formState.studyScope} 
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, studyScope: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select your study scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="engineering">Engineering</SelectItem>
+                    <SelectItem value="medicine">Medicine</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="arts">Arts</SelectItem>
+                    <SelectItem value="science">Science</SelectItem>
+                    <SelectItem value="law">Law</SelectItem>
+                    <SelectItem value="education">Education</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
-        {/* Institution Type */}
-        <div className="space-y-2">
-          <h3 className="text-md font-medium">Institution Type</h3>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="institutionType"
-                checked={formState.institutionType === 'malaysiaOrExchange'}
-                onChange={() => handleRadioChange('institutionType', 'malaysiaOrExchange')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Malaysia or Exchange Program</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="institutionType"
-                checked={formState.institutionType === 'abroad'}
-                onChange={() => handleRadioChange('institutionType', 'abroad')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Abroad</span>
-            </label>
-          </div>
-        </div>
+        {/* Timeline Section */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center mb-4">
+              <Calendar className="h-5 w-5 text-[#6366f1] mr-2" />
+              <h3 className="text-md font-medium">Timeline</h3>
+            </div>
+            <Separator className="mb-6" />
+            
+            <div className="space-y-6">
+              {/* Enrollment & Graduation Dates */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Enrollment Date</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="date"
+                      name="enrollmentDate"
+                      value={formState.enrollmentDate}
+                      onChange={handleDateChange}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Expected Graduation Date</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="date"
+                      name="expectedGraduationDate"
+                      value={formState.expectedGraduationDate}
+                      onChange={handleDateChange}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Current Year */}
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Current Year</Label>
+                <Select 
+                  value={formState.currentYear} 
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, currentYear: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select your current year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Year 1</SelectItem>
+                    <SelectItem value="2">Year 2</SelectItem>
+                    <SelectItem value="3">Year 3</SelectItem>
+                    <SelectItem value="4">Year 4</SelectItem>
+                    <SelectItem value="5">Year 5</SelectItem>
+                    <SelectItem value="6">Year 6</SelectItem>
+                    <SelectItem value="7">Year 7</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
-        {/* Study Scope */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Study Scope
-          </label>
-          <input
-            type="text"
-            name="studyScope"
-            value={formState.studyScope}
-            onChange={handleInputChange}
-            placeholder="Enter your field of study"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-        
-        {/* Enrollment Date */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Enrollment Date
-          </label>
-          <input
-            type="date"
-            name="enrollmentDate"
-            value={formState.enrollmentDate}
-            onChange={handleDateChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-        
-        {/* Expected Graduation Date */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Expected Graduation Date
-          </label>
-          <input
-            type="date"
-            name="expectedGraduationDate"
-            value={formState.expectedGraduationDate}
-            onChange={handleDateChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-        
-        {/* Current Year */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Current Year
-          </label>
-          <select
-            name="currentYear"
-            value={formState.currentYear}
-            onChange={handleSelectChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          >
-            <option value="">Select Current Year</option>
-            <option value="1">Year 1</option>
-            <option value="2">Year 2</option>
-            <option value="3">Year 3</option>
-            <option value="4">Year 4</option>
-            <option value="5+">Year 5+</option>
-          </select>
-        </div>
-        
-        {/* Grade Type */}
-        <div className="space-y-2">
-          <h3 className="text-md font-medium">Grade Type</h3>
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="gradeType"
-                checked={formState.gradeType === 'cgpa'}
-                onChange={() => handleRadioChange('gradeType', 'cgpa')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>CGPA</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="gradeType"
-                checked={formState.gradeType === 'grade'}
-                onChange={() => handleRadioChange('gradeType', 'grade')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Grade (A, B, etc.)</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="gradeType"
-                checked={formState.gradeType === 'others'}
-                onChange={() => handleRadioChange('gradeType', 'others')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Others</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="gradeType"
-                checked={formState.gradeType === 'noGrade'}
-                onChange={() => handleRadioChange('gradeType', 'noGrade')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>No Grade Yet</span>
-            </label>
-          </div>
-        </div>
-        
-        {/* Grade Value (conditional) */}
-        {formState.gradeType !== 'noGrade' && (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Grade Value
-            </label>
-            <input
-              type="text"
-              name="gradeValue"
-              value={formState.gradeValue}
-              onChange={handleInputChange}
-              placeholder={formState.gradeType === 'cgpa' ? "e.g. 3.75" : "e.g. A"}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
-          </div>
-        )}
-        
-        {/* English Test */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            English Proficiency Test
-          </label>
-          <select
-            name="englishTest"
-            value={formState.englishTest}
-            onChange={handleSelectChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          >
-            <option value="muet">MUET</option>
-            <option value="cefr">CEFR</option>
-            <option value="toefl">TOEFL</option>
-            <option value="ielts">IELTS</option>
-            <option value="other">Other</option>
-            <option value="none">None</option>
-          </select>
-        </div>
-        
-        {/* Navigation Buttons */}
-        <div className="flex justify-between pt-4">
+        {/* Performance Section */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center mb-4">
+              <BookOpen className="h-5 w-5 text-[#6366f1] mr-2" />
+              <h3 className="text-md font-medium">Academic Performance</h3>
+            </div>
+            <Separator className="mb-6" />
+            
+            <div className="space-y-6">
+              {/* Grade Type */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Grade Type</Label>
+                <RadioGroup 
+                  value={formState.gradeType || 'cgpa'} 
+                  onValueChange={(value) => handleRadioChange('gradeType', value)}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="cgpa" id="grade-cgpa" />
+                    <Label htmlFor="grade-cgpa" className="font-normal">CGPA</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="grade" id="grade-letter" />
+                    <Label htmlFor="grade-letter" className="font-normal">Grade (A, B, C)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="others" id="grade-others" />
+                    <Label htmlFor="grade-others" className="font-normal">Others</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="noGrade" id="grade-none" />
+                    <Label htmlFor="grade-none" className="font-normal">No grade yet</Label>
+                  </div>
+                </RadioGroup>
+
+                {formState.gradeType !== 'noGrade' && (
+                  <div className="pt-2 space-y-2">
+                    <Label className="text-sm text-gray-600">Grade Value</Label>
+                    <Input
+                      type="text"
+                      name="gradeValue"
+                      value={formState.gradeValue}
+                      onChange={handleInputChange}
+                      placeholder={formState.gradeType === 'cgpa' ? "e.g. 3.5" : "e.g. A-"}
+                      className="max-w-xs"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              {/* English Test */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">English Test</Label>
+                <div className="flex items-center mb-2">
+                  <Languages className="h-4 w-4 text-gray-500 mr-2" />
+                  <span className="text-sm text-gray-500">Select your English proficiency test</span>
+                </div>
+                <RadioGroup 
+                  value={formState.englishTest || 'none'} 
+                  onValueChange={(value) => handleRadioChange('englishTest', value)}
+                  className="grid grid-cols-2 md:grid-cols-3 gap-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="muet" id="english-muet" />
+                    <Label htmlFor="english-muet" className="font-normal">MUET</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="cefr" id="english-cefr" />
+                    <Label htmlFor="english-cefr" className="font-normal">CEFR</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="toefl" id="english-toefl" />
+                    <Label htmlFor="english-toefl" className="font-normal">TOEFL</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="ielts" id="english-ielts" />
+                    <Label htmlFor="english-ielts" className="font-normal">IELTS</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="none" id="english-none" />
+                    <Label htmlFor="english-none" className="font-normal">None</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="other" id="english-other" />
+                    <Label htmlFor="english-other" className="font-normal">Other</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Form Buttons */}
+        <div className="flex justify-between mt-8">
           <Button 
             type="button" 
-            onClick={handleBack} 
             variant="outline"
-            disabled={isSubmitting}
+            onClick={() => router.push('/personal-information')}
+            className="px-6"
           >
             Back
           </Button>
           <Button 
-            type="submit" 
+            type="submit"
             disabled={isSubmitting}
+            className="bg-[#6366f1] hover:bg-[#4f46e5] px-8"
           >
             {isSubmitting ? 'Saving...' : 'Next'}
           </Button>

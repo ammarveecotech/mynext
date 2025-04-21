@@ -1,36 +1,75 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Button } from "@/components/ui/button";
-import FormLayout from '@/components/FormLayout';
-import { useForm } from '@/context/FormContext';
-import { useToast } from '@/components/ui/use-toast';
 import { useSession } from 'next-auth/react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from '@/components/ui/use-toast';
+import { User, Calendar, Phone, Mail, MapPin, Heart } from 'lucide-react';
+import { SectionHeading } from '@/components/ui/section-heading';
+import FormLayout from '@/components/FormLayout';
+import { ProfileUpload } from '@/components/ui/profile-upload';
+import { useFormData, type FormData, type MasterDataItem } from "@/hooks/useFormData";
 
 export default function PersonalInformation() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { formData, updateFormData, saveStep, isSubmitting } = useForm();
+  const { formData, fetchFormData, saveFormData } = useFormData();
   const { toast } = useToast();
   
+  // Master data for dropdowns
+  const [countries] = useState<MasterDataItem[]>([
+    { _id: '1', name: 'Malaysia', code: 'MY' },
+    { _id: '2', name: 'Singapore', code: 'SG' },
+  ]);
+  
+  const [states, setStates] = useState<MasterDataItem[]>([
+    { _id: '1', name: 'Selangor', code: 'SGR' },
+    { _id: '2', name: 'Kuala Lumpur', code: 'KUL' },
+  ]);
+  
+  const [cities, setCities] = useState<MasterDataItem[]>([
+    { _id: '1', name: 'Shah Alam', code: 'SHA' },
+    { _id: '2', name: 'Petaling Jaya', code: 'PJ' },
+  ]);
+  
   // Local form state
-  const [formState, setFormState] = useState({
-    identificationType: formData.identificationType || 'malaysianIC',
-    identificationNumber: formData.identificationNumber || '',
-    fullName: formData.fullName || '',
-    displayName: formData.displayName || '',
-    gender: formData.gender || 'male',
-    dateOfBirth: formData.dateOfBirth || '',
-    phoneNumber: formData.phoneNumber || '',
-    email: formData.email || '',
-    nationality: formData.nationality || 'malaysian',
-    race: formData.race || '',
-    country: formData.country || '',
-    state: formData.state || '',
-    city: formData.city || '',
-    postcode: formData.postcode || '',
-    isOKU: formData.isOKU || false,
-  });
-
+  const [formState, setFormState] = useState<FormData>({});
+  const [loading, setLoading] = useState(false);
+  
+  // Load form data when component mounts
+  useEffect(() => {
+    const loadFormData = async () => {
+      try {
+        setLoading(true);
+        // Fetch form data from API
+        const data = await fetchFormData();
+        
+        // Initialize form state with fetched data
+        if (data) {
+          setFormState(data);
+        }
+      } catch (error) {
+        console.error('Error loading form data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your information. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Only load data if user is authenticated
+    if (status === 'authenticated') {
+      loadFormData();
+    }
+  }, [status]);
+  
   // Check authentication
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -38,31 +77,8 @@ export default function PersonalInformation() {
     }
   }, [status, router]);
   
-  // Load form data when component mounts
-  useEffect(() => {
-    if (Object.keys(formData).length > 0) {
-      setFormState({
-        identificationType: formData.identificationType || 'malaysianIC',
-        identificationNumber: formData.identificationNumber || '',
-        fullName: formData.fullName || '',
-        displayName: formData.displayName || '',
-        gender: formData.gender || 'male',
-        dateOfBirth: formData.dateOfBirth || '',
-        phoneNumber: formData.phoneNumber || '',
-        email: formData.email || '',
-        nationality: formData.nationality || 'malaysian',
-        race: formData.race || '',
-        country: formData.country || '',
-        state: formData.state || '',
-        city: formData.city || '',
-        postcode: formData.postcode || '',
-        isOKU: formData.isOKU || false,
-      });
-    }
-  }, [formData]);
-  
   // Don't render the form until we confirm authentication
-  if (status === 'loading') {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
         <div className="text-white text-xl">Loading...</div>
@@ -73,395 +89,418 @@ export default function PersonalInformation() {
   if (status === 'unauthenticated') {
     return null;
   }
+  
+  // Fetch master data (countries, states, cities)
+  const fetchMasterData = async (type: string, parentId: string, parentField?: string) => {
+    // This would be an API call in a real application
+    // For now, return mock data
+    console.log(`Fetching ${type} for parent ID ${parentId} (field: ${parentField})`);
+    return [];
+  };
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormState(prev => ({
+    const { name, value } = e.target;
+    setFormState((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
   
   // Handle radio button changes
   const handleRadioChange = (name: string, value: string) => {
-    setFormState(prev => ({
+    setFormState((prev) => ({
       ...prev,
       [name]: value
     }));
   };
   
   // Handle select changes
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormState(prev => ({
+  const handleSelectChange = async (value: string, name: string) => {
+    setFormState((prev) => ({
       ...prev,
       [name]: value
     }));
+    
+    // Handle dependent dropdowns
+    if (name === 'curr_country') {
+      // When country changes, fetch states for that country
+      const statesData = await fetchMasterData('states', value, 'country_id');
+      setStates(statesData);
+      setCities([]); // Reset cities when country changes
+      
+      // Reset state and city in form
+      setFormState((prev) => ({
+        ...prev,
+        state: '',
+        city: ''
+      }));
+    } else if (name === 'state') {
+      // When state changes, fetch cities for that state
+      const citiesData = await fetchMasterData('cities', value, 'state_id');
+      setCities(citiesData);
+      
+      // Reset city in form
+      setFormState((prev) => ({
+        ...prev,
+        city: ''
+      }));
+    }
   };
   
   // Validate form
   const validateForm = () => {
     // Required fields
     const requiredFields = [
-      'identificationNumber',
-      'fullName',
+      'id_number',
+      'display_name',
       'gender',
-      'dateOfBirth',
-      'phoneNumber',
-      'email',
+      'dob',
+      'mob_number',
       'nationality'
     ];
     
     for (const field of requiredFields) {
-      if (!formState[field as keyof typeof formState]) {
+      if (!formState[field as keyof FormData]) {
         toast({
           title: "Validation Error",
           description: `Please fill in all required fields.`,
-          variant: "destructive",
+          variant: "destructive"
         });
         return false;
       }
     }
     
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formState.email)) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
     return true;
   };
-  
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
-    // Update the form context with the local state
-    updateFormData(formState);
-    
-    // Save the current step and proceed to the next one
-    const success = await saveStep('personal-information');
-    
-    if (success) {
-      router.push('/current-status');
+
+    try {
+      await saveFormData(formState);
+      router.push('/preferences');
+    } catch (error) {
+      console.error('Error saving form:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save form. Please try again.',
+        variant: "destructive"
+      });
     }
   };
-  
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      // TODO: Implement actual file upload logic
+      const fakeUrl = URL.createObjectURL(file);
+      setFormState((prev) => ({ ...prev, profile_picture: fakeUrl }));
+      toast({
+        title: "Success",
+        description: "Profile picture uploaded successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload profile picture",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
-    <FormLayout title="Personal Information">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Identification Type */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-medium">Identification Type</h2>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="identificationType"
-                checked={formState.identificationType === 'malaysianIC'}
-                onChange={() => handleRadioChange('identificationType', 'malaysianIC')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Malaysian IC</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="identificationType"
-                checked={formState.identificationType === 'passportNumber'}
-                onChange={() => handleRadioChange('identificationType', 'passportNumber')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Passport Number</span>
-            </label>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Please insert your identification number</p>
-            <p className="text-sm text-gray-500 mb-2">Please fill in without the "-" symbol</p>
-            <input
-              type="text"
-              name="identificationNumber"
-              value={formState.identificationNumber}
-              onChange={handleInputChange}
-              placeholder="Enter your identification number"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Name Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Full Name (as per passport or IC)
-            </label>
-            <input
-              type="text"
-              name="fullName"
-              value={formState.fullName}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Display Name (optional)
-            </label>
-            <input
-              type="text"
-              name="displayName"
-              value={formState.displayName}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Gender */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-medium">Gender</h2>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="gender"
-                checked={formState.gender === 'male'}
-                onChange={() => handleRadioChange('gender', 'male')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Male</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="gender"
-                checked={formState.gender === 'female'}
-                onChange={() => handleRadioChange('gender', 'female')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Female</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Date of Birth & Phone Number */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Date of Birth
-            </label>
-            <input
-              type="date"
-              name="dateOfBirth"
-              value={formState.dateOfBirth}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              name="phoneNumber"
-              value={formState.phoneNumber}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Email */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formState.email}
-            onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            required
+    <FormLayout title="Personal Information" currentStep={1}>
+      <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-8">
+        {/* Profile Picture Upload */}
+        <div className="mb-6">
+          <SectionHeading>Upload Profile Picture</SectionHeading>
+          <ProfileUpload
+            initialImage={formState.profile_picture}
+            onImageUpload={handleImageUpload}
           />
         </div>
 
-        {/* Nationality */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-medium">Nationality</h2>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="nationality"
-                checked={formState.nationality === 'malaysian'}
-                onChange={() => handleRadioChange('nationality', 'malaysian')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Malaysian</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="nationality"
-                checked={formState.nationality === 'nonMalaysian'}
-                onChange={() => handleRadioChange('nationality', 'nonMalaysian')}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Non-Malaysian</span>
-            </label>
-          </div>
-        </div>
+        {/* Personal Information */}
+        <div className="mb-6">
+          <SectionHeading>Personal Information</SectionHeading>
+          <div className="grid grid-cols-2 gap-6 mt-4">
+            {/* Personal Details Section */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <User className="h-5 w-5 text-[#6366f1] mr-2" />
+                <h3 className="text-md font-medium">Personal Details</h3>
+              </div>
+              <Separator className="mb-6" />
 
-        {/* Race */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Race
-          </label>
-          <select
-            name="race"
-            value={formState.race}
-            onChange={handleSelectChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          >
-            <option value="">Select Race</option>
-            <option value="malay">Malay</option>
-            <option value="chinese">Chinese</option>
-            <option value="indian">Indian</option>
-            <option value="others">Others</option>
-          </select>
-        </div>
+              <div className="space-y-6">
+                {/* Identification Type */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Identification Type</Label>
+                  <RadioGroup
+                    value={formState.id_type?.toString() || ''}
+                    onValueChange={(value) => handleRadioChange('id_type', value)}
+                    className="flex space-x-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="1" id="id-type-ic" />
+                      <Label htmlFor="id-type-ic" className="font-normal">Malaysian IC</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="2" id="id-type-passport" />
+                      <Label htmlFor="id-type-passport" className="font-normal">Passport</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
 
-        {/* Where do you stay? */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium">Where do you stay?</h2>
-          
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Country
-            </label>
-            <select
-              name="country"
-              value={formState.country}
-              onChange={handleSelectChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            >
-              <option value="">Select Country</option>
-              <option value="malaysia">Malaysia</option>
-              <option value="singapore">Singapore</option>
-              <option value="others">Others</option>
-            </select>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                State
-              </label>
-              <select
-                name="state"
-                value={formState.state}
-                onChange={handleSelectChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              >
-                <option value="">Select State</option>
-                <option value="johor">Johor</option>
-                <option value="kedah">Kedah</option>
-                <option value="kelantan">Kelantan</option>
-                <option value="melaka">Melaka</option>
-                <option value="negeriSembilan">Negeri Sembilan</option>
-                <option value="pahang">Pahang</option>
-                <option value="perak">Perak</option>
-                <option value="perlis">Perlis</option>
-                <option value="penang">Penang</option>
-                <option value="sabah">Sabah</option>
-                <option value="sarawak">Sarawak</option>
-                <option value="selangor">Selangor</option>
-                <option value="terengganu">Terengganu</option>
-                <option value="kualaLumpur">Kuala Lumpur</option>
-                <option value="labuan">Labuan</option>
-                <option value="putrajaya">Putrajaya</option>
-              </select>
+                {/* ID Number */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">
+                    {formState.id_type === 1 ? 'IC Number' : 'Passport Number'}
+                  </Label>
+                  <Input
+                    type="text"
+                    name="id_number"
+                    value={formState.id_number || ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter your identification number"
+                    className="max-w-xs"
+                    required
+                  />
+                </div>
+
+                {/* Name Fields */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Full Name (as per passport or IC)</Label>
+                  <Input
+                    type="text"
+                    name="display_name"
+                    value={formState.display_name || ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+
+                {/* Gender */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Gender</Label>
+                  <RadioGroup
+                    value={formState.gender || ''}
+                    onValueChange={(value) => handleRadioChange('gender', value)}
+                    className="flex space-x-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="M" id="gender-male" />
+                      <Label htmlFor="gender-male" className="font-normal">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="F" id="gender-female" />
+                      <Label htmlFor="gender-female" className="font-normal">Female</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Date of Birth */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Date of Birth</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                    <Input
+                      type="date"
+                      name="dob"
+                      value={typeof formState.dob === 'string' ? formState.dob : formState.dob instanceof Date ? formState.dob.toISOString().split('T')[0] : ''}
+                      onChange={handleInputChange}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                City
-              </label>
-              <input
-                type="text"
-                name="city"
-                value={formState.city}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              />
+
+            {/* Contact Information Section */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <Phone className="h-5 w-5 text-[#6366f1] mr-2" />
+                <h3 className="text-md font-medium">Contact Information</h3>
+              </div>
+              <Separator className="mb-6" />
+
+              <div className="space-y-6">
+                {/* Phone Number */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="tel"
+                      name="mob_number"
+                      value={formState.mob_number || ''}
+                      onChange={handleInputChange}
+                      placeholder="Enter your phone number"
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Nationality */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Nationality</Label>
+                  <Select
+                    value={formState.nationality?.toString() || ''}
+                    onValueChange={(value) => handleRadioChange('nationality', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your nationality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Malaysian</SelectItem>
+                      <SelectItem value="2">Singaporean</SelectItem>
+                      <SelectItem value="3">Indonesian</SelectItem>
+                      <SelectItem value="4">Thai</SelectItem>
+                      <SelectItem value="5">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Country */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Current Country</Label>
+                  <Select
+                    value={formState.curr_country || ''}
+                    onValueChange={(value) => handleSelectChange(value, 'curr_country')}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your current country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((country) => (
+                        <SelectItem key={country._id} value={country._id}>
+                          {country.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* State */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">State</Label>
+                  <Select
+                    value={formState.state || ''}
+                    onValueChange={(value) => handleSelectChange(value, 'state')}
+                    disabled={!formState.curr_country}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {states.map((state) => (
+                        <SelectItem key={state._id} value={state._id}>
+                          {state.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* City */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">City</Label>
+                  <Select
+                    value={formState.city || ''}
+                    onValueChange={(value) => handleSelectChange(value, 'city')}
+                    disabled={!formState.state}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select your city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city._id} value={city._id}>
+                          {city.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Postal Code */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Postal Code</Label>
+                  <Input
+                    type="text"
+                    name="postalcode"
+                    value={formState.postalcode || ''}
+                    onChange={handleInputChange}
+                    placeholder="Enter your postal code"
+                    className="max-w-xs"
+                  />
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Postcode
-            </label>
-            <input
-              type="text"
-              name="postcode"
-              value={formState.postcode}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
+        </div>
+
+        {/* Additional Information */}
+        <div className="mb-6">
+          <SectionHeading>Additional Information</SectionHeading>
+          <div className="bg-gray-50 rounded-lg p-6 mt-4">
+            <div className="space-y-6">
+              {/* OKU Status */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Are you registered with Department of Social Welfare Malaysia as a person with Disabilities (OKU)?</Label>
+                <RadioGroup
+                  value={formState.disability_status?.toString() || '0'}
+                  onValueChange={(value) => setFormState(prev => ({ ...prev, disability_status: parseInt(value) }))}
+                  className="flex space-x-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="1" id="disability-yes" />
+                    <Label htmlFor="disability-yes" className="font-normal">Yes</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="0" id="disability-no" />
+                    <Label htmlFor="disability-no" className="font-normal">No</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* OKU Status */}
-        <div className="space-y-2">
-          <h2 className="text-lg font-medium">Are you registered with Department of Social Welfare Malaysia as a person with Disabilities (OKU)?</h2>
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="isOKU"
-                checked={formState.isOKU === true}
-                onChange={() => setFormState(prev => ({ ...prev, isOKU: true }))}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Yes</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="radio"
-                name="isOKU"
-                checked={formState.isOKU === false}
-                onChange={() => setFormState(prev => ({ ...prev, isOKU: false }))}
-                className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>No</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Form Buttons */}
-        <div className="flex justify-end space-x-4 pt-4">
-          <Button 
-            type="submit" 
-            disabled={isSubmitting}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+        {/* Navigation Buttons */}
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            className="px-8"
+            onClick={() => router.push('/signin')}
+            type="button"
           >
-            {isSubmitting ? 'Saving...' : 'Next'}
+            Back
           </Button>
+          <div className="flex space-x-4">
+            <Button
+              variant="ghost"
+              className="px-8"
+              onClick={() => router.push('/preferences')}
+              type="button"
+            >
+              Skip
+            </Button>
+            <Button
+              type="submit"
+              className="px-8 bg-[#6366f1] hover:bg-[#5355d1]"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </form>
     </FormLayout>
   );
-} 
+}

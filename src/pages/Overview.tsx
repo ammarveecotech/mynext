@@ -1,296 +1,200 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
+import { useFormData } from "@/hooks/useFormData";
 import FormLayout from "@/components/FormLayout";
 import { useForm } from "@/context/FormContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Check, User as UserIcon } from "lucide-react";
 import { format } from "date-fns";
-import { Check, Pencil, UserIcon } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { useSession } from 'next-auth/react';
 
 export default function Overview() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const { formData, saveStep, isSubmitting } = useForm();
-  const { toast } = useToast();
-  
-  // Check authentication
+  const { data: session } = useSession();
+  const { formData } = useFormData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/signin');
+    if (!session) {
+      router.push("/signin");
     }
-  }, [status, router]);
+  }, [session, router]);
 
-  // Don't render the form until we confirm authentication
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-  
-  if (status === 'unauthenticated') {
-    return null;
-  }
-
-  const handleBack = () => router.push("/profile-picture");
+  const handleBack = () => {
+    router.push("/preferences");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Save the final step and complete the form
-    const success = await saveStep('overview');
-    if (success) {
-      toast({
-        title: "Registration completed!",
-        description: "Your profile has been successfully submitted.",
+    setIsSubmitting(true);
+
+    try {
+      // Submit the form data
+      const response = await fetch("/api/onboard-form/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: session?.user?.id,
+        }),
       });
-      
-      // Redirect to the home page after a short delay
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
+
+      if (response.ok) {
+        router.push("/success");
+      } else {
+        console.error("Failed to submit form");
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "Not specified";
-    try {
-      return format(new Date(dateString), "dd MMMM yyyy");
-    } catch (error) {
-      return "Invalid date";
-    }
-  };
+  if (!session) {
+    return null;
+  }
 
   return (
     <FormLayout
-      title="Overview"
+      title="Profile Overview"
       description="Review your information before submitting."
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Profile Summary */}
-        <div className="flex items-center space-x-4">
-          <div className="h-20 w-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-            {formData?.profilePicture ? (
-              <img
-                src={formData.profilePicture}
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <UserIcon className="h-10 w-10 text-gray-400" />
-            )}
+      <form onSubmit={handleSubmit}>
+        <div className="max-w-5xl mx-auto space-y-8">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-semibold">Profile Overview</h1>
           </div>
+
+          <Separator />
+
+          {/* Personal Information */}
           <div>
-            <h2 className="text-xl font-bold">{formData?.fullName}</h2>
-            <p className="text-gray-500">{formData?.email}</p>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Personal Information */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Personal Information</CardTitle>
-              <Button 
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-medium">Personal Information</h2>
+              <Button
+                variant="link"
+                className="text-purple-600 hover:text-purple-700"
                 onClick={() => router.push("/personal-information")}
-                className="flex items-center gap-1"
               >
-                <Pencil className="h-4 w-4" />
                 Edit
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Identification</p>
-              <p>{formData?.identificationType === "malaysianIC" ? "Malaysian IC" : "Passport"}: {formData?.identificationNumber}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Gender</p>
-              <p>{formData?.gender === "male" ? "Male" : "Female"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Date of Birth</p>
-              <p>{formatDate(formData?.dateOfBirth)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Phone Number</p>
-              <p>{formData?.phoneNumber || "Not provided"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Nationality</p>
-              <p>{formData?.nationality === "malaysian" ? "Malaysian" : "Non-Malaysian"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Race</p>
-              <p>{formData?.race || "Not specified"}</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-gray-500">Address</p>
-              <p>
-                {[
-                  formData?.city,
-                  formData?.state,
-                  formData?.postcode,
-                  formData?.country
-                ].filter(Boolean).join(", ")}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500">OKU Status</p>
-              <p>{formData?.isOKU ? "Yes" : "No"}</p>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Current Status */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Academic Status</CardTitle>
-              <Button 
+            <div className="flex justify-center mb-8">
+              <div className="w-24 h-24 bg-purple-600 rounded-full flex items-center justify-center">
+                <UserIcon className="w-12 h-12 text-white" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-6">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Identification (Malaysian IC)</p>
+                <p className="text-purple-600">{formData?.identificationNumber || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Display Name</p>
+                <p className="text-purple-600">{formData?.displayName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Full Name (as per passport or IC)</p>
+                <p className="text-purple-600">{formData?.fullName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Date of Birth</p>
+                <p className="text-purple-600">{formData?.dateOfBirth || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Gender</p>
+                <p className="text-purple-600">{formData?.gender || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Email</p>
+                <p className="text-purple-600">{formData?.email || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Phone Number</p>
+                <p className="text-purple-600">{formData?.phoneNumber || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Race</p>
+                <p className="text-purple-600">{formData?.race || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Nationality</p>
+                <p className="text-purple-600">{formData?.nationality || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">State</p>
+                <p className="text-purple-600">{formData?.state || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Where do you stay?</p>
+                <p className="text-purple-600">{formData?.country || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Postcode</p>
+                <p className="text-purple-600">{formData?.postcode || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">City</p>
+                <p className="text-purple-600">{formData?.city || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">OKU</p>
+                <p className="text-purple-600">{formData?.isOKU ? "Yes" : "No"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Current Status */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-medium">Current Status Detail</h2>
+              <Button
+                variant="link"
+                className="text-purple-600 hover:text-purple-700"
                 onClick={() => router.push("/current-status")}
-                className="flex items-center gap-1"
               >
-                <Pencil className="h-4 w-4" />
                 Edit
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Scholarship Type</p>
-              <p>{formData?.scholarshipType === "scholarshipLoan" ? "Scholarship/Loan" : "Self-Funded"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Academic Qualification</p>
-              <p>{formData?.academicQualification || "Not specified"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Institution Type</p>
-              <p>{formData?.institutionType === "malaysiaOrExchange" ? "Malaysia/Exchange" : "Abroad"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Study Scope</p>
-              <p>{formData?.studyScope || "Not specified"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Enrollment Date</p>
-              <p>{formatDate(formData?.enrollmentDate)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Expected Graduation Date</p>
-              <p>{formatDate(formData?.expectedGraduationDate)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Current Year</p>
-              <p>{formData?.currentYear || "Not specified"}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Grade</p>
-              <p>
-                {formData?.gradeType !== "noGrade"
-                  ? `${formData?.gradeType?.toUpperCase()}: ${formData?.gradeValue}`
-                  : "Not applicable"}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500">English Test</p>
-              <p>{formData?.englishTest !== "none" 
-                ? formData?.englishTest?.toUpperCase() 
-                : "None"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Preferences */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Career Preferences</CardTitle>
-              <Button 
-                onClick={() => router.push("/preferences")}
-                className="flex items-center gap-1"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-gray-500 mb-2">Sectors of Interest</p>
-              <div className="flex flex-wrap gap-2">
-                {(formData?.interestedSectors && formData?.interestedSectors.length > 0) ? (
-                  formData?.interestedSectors?.map((sector: string) => (
-                    <Badge key={sector} variant="secondary">
-                      {sector}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-400">No sectors selected</p>
-                )}
+            <div className="grid grid-cols-1 gap-y-6">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">What's your scholarship type?</p>
+                <p className="text-purple-600">{formData?.scholarshipType || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">What's your current academic qualification?</p>
+                <p className="text-purple-600">{formData?.academicQualification || "-"}</p>
               </div>
             </div>
-            
-            <div>
-              <p className="text-gray-500 mb-2">Roles of Interest</p>
-              <div className="flex flex-wrap gap-2">
-                {(formData?.interestedRoles && formData?.interestedRoles.length > 0) ? (
-                  formData?.interestedRoles?.map((role: string) => (
-                    <Badge key={role} variant="secondary">
-                      {role}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-400">No roles selected</p>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <p className="text-gray-500 mb-2">Preferred Locations</p>
-              <div className="flex flex-wrap gap-2">
-                {(formData?.preferredStates && formData?.preferredStates.length > 0) ? (
-                  formData?.preferredStates?.map((state: string) => (
-                    <Badge key={state} variant="secondary">
-                      {state}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-400">No locations selected</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="flex justify-between pt-4">
-          <Button
-            type="button"
-            onClick={handleBack}
-            variant="outline"
-            disabled={isSubmitting}
-          >
-            Back
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-indigo-600 hover:bg-indigo-700"
-          >
-            <Check className="mr-2 h-4 w-4" /> {isSubmitting ? 'Submitting...' : 'Submit Application'}
-          </Button>
+          {/* Navigation Buttons */}
+          <div className="flex justify-between">
+            <Button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={handleBack}
+              type="button"
+            >
+              Back
+            </Button>
+            <Button
+              type="submit"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+              disabled={isSubmitting}
+            >
+              <Check className="mr-2 h-4 w-4" /> {isSubmitting ? 'Submitting...' : 'Submit Application'}
+            </Button>
+          </div>
         </div>
       </form>
     </FormLayout>
   );
-} 
+}

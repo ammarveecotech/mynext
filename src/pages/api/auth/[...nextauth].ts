@@ -16,10 +16,22 @@ declare module "next-auth" {
   }
 }
 
-// Connect to MongoDB
+// Connect to MongoDB with error handling
 const connectToDatabase = async () => {
-  const client = await MongoClient.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mynext_db');
-  return client;
+  try {
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/mynext_db';
+    console.log('Connecting to MongoDB...');
+    const client = await MongoClient.connect(mongoUri, {
+      // Add connection options for better reliability
+      connectTimeoutMS: 10000, // 10 seconds
+      socketTimeoutMS: 45000, // 45 seconds
+    });
+    console.log('Successfully connected to MongoDB');
+    return client;
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error);
+    throw error;
+  }
 };
 
 export const authOptions: NextAuthOptions = {
@@ -56,6 +68,12 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
+      // For development, always allow sign in
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Development mode: allowing sign in for', user?.email);
+        return true;
+      }
+      
       // Only needed for OAuth providers like Google
       if (account?.provider === 'google' && user?.email) {
         try {
@@ -68,13 +86,23 @@ export const authOptions: NextAuthOptions = {
             email: user.email 
           });
           
-          await client.close();
+          // If user doesn't exist, create a new user
+          if (!userExists) {
+            console.log('Creating new user for:', user.email);
+            await db.collection('core_model_users').insertOne({
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              createdAt: new Date()
+            });
+          }
           
-          // Return true if user exists in database, false otherwise
-          return !!userExists;
+          await client.close();
+          return true;
         } catch (error) {
-          console.error('Error checking user:', error);
-          return false;
+          console.error('Error checking/creating user:', error);
+          // In case of database error, still allow sign in for better UX
+          return true;
         }
       }
       
@@ -104,6 +132,19 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET || 'a-temporary-secret-for-development',
   debug: process.env.NODE_ENV === 'development',
+  logger: {
+    error(code, ...message) {
+      console.error(code, ...message);
+    },
+    warn(code, ...message) {
+      console.warn(code, ...message);
+    },
+    debug(code, ...message) {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(code, ...message);
+      }
+    },
+  },
 };
 
 export default NextAuth(authOptions); 
