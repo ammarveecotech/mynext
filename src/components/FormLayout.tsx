@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { cn } from "@/lib/utils";
 import { 
   User, Briefcase, Heart, Camera, FileText,
-  Settings, LogOut, ChevronRight
+  Settings, LogOut, ChevronRight, CheckIcon
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import {
@@ -31,20 +31,10 @@ interface SidebarItemProps {
 }
 
 const SidebarItem = ({ icon: Icon, label, href, active, completed, step, progressPercentage = 0 }: SidebarItemProps) => {
-  // Create icon elements based on the icon type
-  const getStepIcon = () => {
-    switch(step) {
-      case 1: return <User className="h-4 w-4" />;
-      case 2: return <Briefcase className="h-4 w-4" />;
-      case 3: return <Heart className="h-4 w-4" />;
-      case 4: return <Camera className="h-4 w-4" />;
-      case 5: return <FileText className="h-4 w-4" />;
-      default: return <Icon className="h-4 w-4" />;
-    }
-  };
-
-  // Determine if the step should be highlighted based on progress
-  const isHighlighted = progressPercentage >= 80 || completed;
+  // A step is highlighted if it's completed (100%) or active
+  const isHighlighted = progressPercentage >= 100 || active;
+  // A step is completed only if it has 100% progress
+  const isCompleted = progressPercentage >= 100;
 
   return (
     <Link
@@ -54,19 +44,23 @@ const SidebarItem = ({ icon: Icon, label, href, active, completed, step, progres
         active
           ? "bg-[#6366f1] text-white"
           : isHighlighted 
-            ? "text-white hover:bg-[#1c2c4e]" 
+            ? "bg-[#6366f1]/10 text-white hover:bg-[#1c2c4e]" 
             : "text-gray-400 hover:bg-[#1c2c4e]"
       )}
     >
       <div className={cn(
-        "flex items-center justify-center h-8 w-8 rounded-full",
+        "flex items-center justify-center h-8 w-8 rounded-full transition-colors",
         active 
           ? "bg-white text-[#6366f1]" 
           : isHighlighted 
             ? "bg-[#6366f1] text-white" 
             : "bg-gray-200 text-gray-400"
       )}>
-        {getStepIcon()}
+        {isCompleted ? (
+          <CheckIcon className="w-5 h-5" />
+        ) : (
+          <Icon className="h-4 w-4" />
+        )}
       </div>
       <span className="font-medium">{label}</span>
       {!active && <ChevronRight className="h-4 w-4 ml-auto" />}

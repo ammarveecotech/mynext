@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,72 +13,98 @@ import { useToast } from '@/components/ui/use-toast';
 import { useSession } from 'next-auth/react';
 import { BookOpen, GraduationCap, Calendar, Award, Languages } from 'lucide-react';
 import { IMasterAcademicQualification, IMasterEnglishEquivalentTestType, IMasterScopeOfStudy, IMasterScholarshipType } from '@/models/MasterTables';
-
-// Define the form state interface to match CoreModelOnboardform
-interface FormState {
-  scholar_status: string; // scholarshipLoan or selfFunded
-  curr_qualification: string; // from academic qualifications
-  inst_name: string; // institution name (malaysia/abroad)
-  university: string;
-  campus: string;
-  faculty: string;
-  study_program: string;
-  inst_country: string;
-  scope: string; // study scope
-  curr_study_year: string;
-  grade_status: string;
-  grade: string;
-  english_tests: string;
-  english_score: number;
-}
+import { ICoreModelOnboardform } from '@/models/CoreTables';
 
 // Helper function to ensure type safety for IDs
 const getIdString = (id: number | undefined): string => {
-  return id?.toString() || '';
+  return id?.toString() ?? '';
 };
 
 export default function CurrentStatus() {
+  // 1. All hooks at the top level
   const router = useRouter();
   const { data: session, status } = useSession();
   const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
-  
-  // Add state for master data
-  const [academicQualifications, setAcademicQualifications] = useState<IMasterAcademicQualification[]>([]);
-  const [englishTests, setEnglishTests] = useState<IMasterEnglishEquivalentTestType[]>([]);
-  const [studyScopes, setStudyScopes] = useState<IMasterScopeOfStudy[]>([]);
-  const [scholarshipTypes, setScholarshipTypes] = useState<IMasterScholarshipType[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Fetch master data
+  // 2. All state initializations with safe defaults
+  const [loading, setLoading] = useState(true);
+  const [formState, setFormState] = useState<Partial<ICoreModelOnboardform>>({
+    scholar_status: undefined,
+    curr_qualification: '',
+    insti_name: 'Malaysia/Exchange Program',
+    university: '',
+    campus: '',
+    faculty: '',
+    study_program: '',
+    insti_country: '',
+    scope: '',
+    curr_study_year: '',
+    grade_status: 'cgpa',
+    grade: '',
+    english_tests: 'none',
+    english_score: 0,
+  });
+
+  const [masterData, setMasterData] = useState({
+    academicQualifications: [] as IMasterAcademicQualification[],
+    englishTests: [] as IMasterEnglishEquivalentTestType[],
+    studyScopes: [] as IMasterScopeOfStudy[],
+    scholarshipTypes: [] as IMasterScholarshipType[],
+  });
+
+  // 3. Authentication effect
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/signin');
+    }
+  }, [status, router]);
+
+  // 4. Form data effect
+  useEffect(() => {
+    if (formData && Object.keys(formData).length > 0) {
+      setFormState(prev => ({
+        ...prev,
+        scholar_status: Number(formData.scholar_status) === 2 ? 2 : 1,
+        curr_qualification: formData.curr_qualification ?? '',
+        insti_name: formData.insti_name === 'Malaysia/Exchange Program' ? 'Malaysia/Exchange Program' : 'Abroad',
+        scope: formData.scope ?? '',
+        curr_study_year: formData.curr_study_year ?? '',
+        grade_status: formData.grade_status ?? 'cgpa',
+        grade: formData.grade ?? '',
+        english_tests: formData.english_tests ?? 'none',
+      }));
+    }
+  }, [formData]);
+
+  // 5. Master data fetching effect
   useEffect(() => {
     const fetchMasterData = async () => {
       try {
         setLoading(true);
-        
-        // Fetch academic qualifications
-        const qualResponse = await fetch('/api/master-data/academic-qualifications');
-        if (!qualResponse.ok) throw new Error('Failed to fetch academic qualifications');
-        const qualData = await qualResponse.json();
-        setAcademicQualifications(qualData);
+        const responses = await Promise.all([
+          fetch('/api/master-data/academic-qualifications'),
+          fetch('/api/master-data/english-tests'),
+          fetch('/api/master-data/study-scopes'),
+          fetch('/api/master-data/scholarship-types'),
+        ]);
 
-        // Fetch English tests
-        const testResponse = await fetch('/api/master-data/english-tests');
-        if (!testResponse.ok) throw new Error('Failed to fetch English tests');
-        const testData = await testResponse.json();
-        setEnglishTests(testData);
+        const [
+          academicQualifications,
+          englishTests,
+          studyScopes,
+          scholarshipTypes,
+        ] = await Promise.all(responses.map(r => {
+          if (!r.ok) throw new Error(`Failed to fetch ${r.url}`);
+          return r.json();
+        }));
 
-        // Fetch study scopes
-        const scopeResponse = await fetch('/api/master-data/study-scopes');
-        if (!scopeResponse.ok) throw new Error('Failed to fetch study scopes');
-        const scopeData = await scopeResponse.json();
-        setStudyScopes(scopeData);
-
-        // Fetch scholarship types
-        const scholarshipResponse = await fetch('/api/master-data/scholarship-types');
-        if (!scholarshipResponse.ok) throw new Error('Failed to fetch scholarship types');
-        const scholarshipData = await scholarshipResponse.json();
-        setScholarshipTypes(scholarshipData);
+        setMasterData({
+          academicQualifications,
+          englishTests,
+          studyScopes,
+          scholarshipTypes,
+        });
       } catch (error) {
         console.error('Error fetching master data:', error);
         toast({
@@ -94,14 +120,7 @@ export default function CurrentStatus() {
     fetchMasterData();
   }, [toast]);
 
-  // Check authentication
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/signin');
-    }
-  }, [status, router]);
-
-  // Don't render the form until we confirm authentication
+  // Loading state check
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
@@ -109,43 +128,13 @@ export default function CurrentStatus() {
       </div>
     );
   }
-  
+
   if (status === 'unauthenticated') {
     return null;
   }
   
-  // Local form state with default values
-  const [formState, setFormState] = useState<Partial<FormState>>({
-    scholar_status: formData?.scholarshipType === 'scholarshipLoan' ? 'scholarshipLoan' : 'selfFunded',
-    curr_qualification: formData?.academicQualification || '',
-    inst_name: formData?.institutionType === 'malaysiaOrExchange' ? 'Malaysia/Exchange Program' : 'Abroad',
-    scope: formData?.studyScope || '',
-    curr_study_year: formData?.currentYear || '',
-    grade_status: formData?.gradeType || 'cgpa',
-    grade: formData?.gradeValue || '',
-    english_tests: formData?.englishTest || '',
-    english_score: 0,
-  });
-  
-  // Load form data when component mounts
-  useEffect(() => {
-    if (formData && Object.keys(formData).length > 0) {
-      setFormState({
-        scholar_status: formData.scholarshipType === 'scholarshipLoan' ? 'scholarshipLoan' : 'selfFunded',
-        curr_qualification: formData.academicQualification || '',
-        inst_name: formData.institutionType === 'malaysiaOrExchange' ? 'Malaysia/Exchange Program' : 'Abroad',
-        scope: formData.studyScope || '',
-        curr_study_year: formData.currentYear || '',
-        grade_status: formData.gradeType || 'cgpa',
-        grade: formData.gradeValue || '',
-        english_tests: formData.englishTest || '',
-        english_score: 0,
-      });
-    }
-  }, [formData]);
-  
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormState(prev => ({
       ...prev,
@@ -162,7 +151,7 @@ export default function CurrentStatus() {
   };
   
   // Handle select changes
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormState(prev => ({
       ...prev,
@@ -171,7 +160,7 @@ export default function CurrentStatus() {
   };
   
   // Handle date changes
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormState(prev => ({
       ...prev,
@@ -199,7 +188,7 @@ export default function CurrentStatus() {
       return false;
     }
     
-    if (!formState.inst_name) {
+    if (!formState.insti_name) {
       toast({
         title: "Validation Error",
         description: "Please select your institution type.",
@@ -248,21 +237,21 @@ export default function CurrentStatus() {
   };
   
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
     
     // Convert form state to match FormContext format
-    const contextData = {
-      scholarshipType: formState.scholar_status === 'scholarshipLoan' ? 'scholarshipLoan' as const : 'selfFunded' as const,
-      academicQualification: formState.curr_qualification,
-      institutionType: formState.inst_name === 'Malaysia/Exchange Program' ? 'malaysiaOrExchange' as const : 'abroad' as const,
-      studyScope: formState.scope,
-      currentYear: formState.curr_study_year,
-      gradeType: formState.grade_status as 'cgpa' | 'grade' | 'others' | 'noGrade',
-      gradeValue: formState.grade,
-      englishTest: formState.english_tests as 'muet' | 'cefr' | 'toefl' | 'ielts' | 'none' | 'other',
+    const contextData: Partial<ICoreModelOnboardform> = {
+      scholar_status: formState.scholar_status === 2 ? 2 : 1,
+      curr_qualification: formState.curr_qualification,
+      insti_name: formState.insti_name === 'Malaysia/Exchange Program' ? 'Malaysia/Exchange Program' : 'Abroad',
+      scope: formState.scope,
+      curr_study_year: formState.curr_study_year,
+      grade_status: formState.grade_status,
+      grade: formState.grade,
+      english_tests: formState.english_tests,
     };
     
     // Update the form context with the converted data
@@ -274,11 +263,6 @@ export default function CurrentStatus() {
     if (success) {
       router.push('/preferences');
     }
-  };
-  
-  // Handle back button
-  const handleBack = () => {
-    router.push('/personal-information');
   };
   
   return (
@@ -302,14 +286,14 @@ export default function CurrentStatus() {
             <div className="space-y-3">
               <Label className="text-base font-medium">Scholarship Type</Label>
               <RadioGroup 
-                value={formState.scholar_status} 
-                onValueChange={(value) => setFormState(prev => ({ ...prev, scholar_status: value }))}
+                value={formState.scholar_status?.toString()} 
+                onValueChange={(value) => setFormState(prev => ({ ...prev, scholar_status: Number(value) }))}
                 className="flex flex-wrap gap-4"
               >
-                {scholarshipTypes.map((type) => (
+                {masterData.scholarshipTypes.map((type) => (
                   <div key={type.Id?.toString()} className="flex items-center space-x-2">
                     <RadioGroupItem 
-                      value={type.Id?.toString() || ''} 
+                      value={type.Id?.toString() ?? ''} 
                       id={`scholarship-${type.Id}`} 
                     />
                     <Label 
@@ -346,7 +330,7 @@ export default function CurrentStatus() {
                     <SelectValue placeholder="Select your qualification" />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicQualifications.map((qual) => (
+                    {masterData.academicQualifications.map((qual) => (
                       <SelectItem 
                         key={getIdString(qual.Id)}
                         value={getIdString(qual.Id)}
@@ -362,8 +346,8 @@ export default function CurrentStatus() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Institution Type</Label>
                 <RadioGroup 
-                  value={formState.inst_name || 'Malaysia/Exchange Program'} 
-                  onValueChange={(value) => handleRadioChange('inst_name', value)}
+                  value={formState.insti_name ?? 'Malaysia/Exchange Program'} 
+                  onValueChange={(value) => handleRadioChange('insti_name', value)}
                   className="flex space-x-4"
                 >
                   <div className="flex items-center space-x-2">
@@ -388,9 +372,9 @@ export default function CurrentStatus() {
                     <SelectValue placeholder="Select your study scope" />
                   </SelectTrigger>
                   <SelectContent>
-                    {studyScopes.map((scope) => (
+                    {masterData.studyScopes.map((scope) => (
                       <SelectItem 
-                        key={scope._id || scope.Id.toString()}
+                        key={scope._id ?? scope.Id.toString()}
                         value={scope.Id.toString()}
                       >
                         {scope.Name}
@@ -448,7 +432,7 @@ export default function CurrentStatus() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Grade Type</Label>
                 <RadioGroup 
-                  value={formState.grade_status || 'cgpa'} 
+                  value={formState.grade_status ?? 'cgpa'} 
                   onValueChange={(value) => handleRadioChange('grade_status', value)}
                   className="grid grid-cols-1 md:grid-cols-2 gap-2"
                 >
@@ -493,7 +477,7 @@ export default function CurrentStatus() {
                   <span className="text-sm text-gray-500">Select your English proficiency test</span>
                 </div>
                 <RadioGroup 
-                  value={formState.english_tests || 'none'} 
+                  value={formState.english_tests ?? 'none'} 
                   onValueChange={(value) => handleRadioChange('english_tests', value)}
                   className="grid grid-cols-2 md:grid-cols-3 gap-2"
                 >

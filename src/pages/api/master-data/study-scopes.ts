@@ -20,4 +20,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error fetching study scopes:', error);
     return res.status(500).json({ message: 'Failed to fetch study scopes' });
   }
-} 
+}

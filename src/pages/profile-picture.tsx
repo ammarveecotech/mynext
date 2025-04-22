@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/router";
 import FormLayout from "@/components/FormLayout";
 import { useForm } from "@/context/FormContext";
@@ -13,6 +13,18 @@ export default function ProfilePicture() {
   const { data: session, status } = useSession();
   const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
+  
+  // Initialize state with null first
+  const [image, setImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update image when formData is available
+  useEffect(() => {
+    if (formData?.profile_picture) {
+      console.log("Setting profile picture from form data");
+      setImage(formData.profile_picture);
+    }
+  }, [formData]);
   
   // Check authentication
   useEffect(() => {
@@ -33,16 +45,12 @@ export default function ProfilePicture() {
   if (status === 'unauthenticated') {
     return null;
   }
-  
-  // Initialize state with profile picture from form data
-  const [image, setImage] = useState<string | null>(formData?.profilePicture || null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     // Update form data with profile picture
-    updateFormData({ profilePicture: image || undefined });
+    updateFormData({ profile_picture: image ?? undefined });
     
     // Save and proceed to next step
     const success = await saveStep('profile-picture');
@@ -55,7 +63,7 @@ export default function ProfilePicture() {
     router.push("/preferences");
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -80,8 +88,14 @@ export default function ProfilePicture() {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setImage(reader.result as string);
+    reader.onload = (event) => {
+      const result = event.target?.result;
+      if (typeof result === 'string') {
+        console.log("Setting new profile picture from file");
+        setImage(result);
+        // Also update form data immediately
+        updateFormData({ profile_picture: result });
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -102,9 +116,9 @@ export default function ProfilePicture() {
       <form onSubmit={handleSubmit} className="space-y-6 max-w-full">
         <div className="flex flex-col space-y-6">
           <div className="flex items-start">
-            <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
+            <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
               {image ? (
-                <>
+                <div className="relative w-full h-full">
                   <img
                     src={image}
                     alt="Profile"
@@ -113,11 +127,11 @@ export default function ProfilePicture() {
                   <button
                     type="button"
                     onClick={removeImage}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                   >
                     <XIcon className="h-3 w-3" />
                   </button>
-                </>
+                </div>
               ) : (
                 <UserIcon className="h-16 w-16 text-gray-400" />
               )}

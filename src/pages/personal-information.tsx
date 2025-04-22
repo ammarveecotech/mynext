@@ -8,31 +8,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/components/ui/use-toast';
-import { User, Calendar, Phone, Mail, MapPin, Heart } from 'lucide-react';
+import { User, Calendar, Phone } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
 import FormLayout from '@/components/FormLayout';
-import { useFormData, type FormData } from "@/hooks/useFormData";
-import React from 'react';
-
-interface MasterDataItem {
-  _id: string;
-  Id: number;
-  Name: string;
-  StateId?: number;
-  StateCode?: string;
-  StateName?: string;
-  CountryId?: number;
-  CountryCode?: string;
-  CountryName?: string;
-  Iso2?: string;
-  Iso3?: string;
-  NumericCode?: string;
-  PhoneCode?: string;
-  Capital?: string;
-  Currency?: string;
-  Region?: string;
-  Subregion?: string;
-}
+import { useFormData } from "@/hooks/useFormData";
+import { IMasterCountry, IMasterState, IMasterCity } from '@/models/MasterTables';
+import { ICoreModelOnboardform } from '@/models/CoreTables';
 
 export default function PersonalInformation() {
   const router = useRouter();
@@ -41,12 +22,12 @@ export default function PersonalInformation() {
   const { toast } = useToast();
   
   // Master data states
-  const [countries, setCountries] = useState<MasterDataItem[]>([]);
-  const [states, setStates] = useState<MasterDataItem[]>([]);
-  const [cities, setCities] = useState<MasterDataItem[]>([]);
+  const [countries, setCountries] = useState<IMasterCountry[]>([]);
+  const [states, setStates] = useState<IMasterState[]>([]);
+  const [cities, setCities] = useState<IMasterCity[]>([]);
   
   // Local form state
-  const [formState, setFormState] = useState<FormData>({});
+  const [formState, setFormState] = useState<Partial<ICoreModelOnboardform>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,7 +81,7 @@ export default function PersonalInformation() {
           
           if (isActive) {
             console.log("PersonalInfo - Setting form data");
-            setFormState(data || {});
+            setFormState(data ?? {});
             await fetchMasterData(); // Fetch master data after form data is loaded
             setLoading(false);
           }
@@ -202,7 +183,7 @@ export default function PersonalInformation() {
     ];
     
     for (const field of requiredFields) {
-      if (!formState[field as keyof FormData]) {
+      if (!formState[field as keyof Partial<ICoreModelOnboardform>]) {
         toast({
           title: "Validation Error",
           description: `Please fill in all required fields.`,
@@ -283,7 +264,7 @@ export default function PersonalInformation() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Identification Type</Label>
                   <RadioGroup
-                    value={formState.id_type?.toString() || ''}
+                    value={formState.id_type?.toString() ?? ''}
                     onValueChange={(value) => handleRadioChange('id_type', value)}
                     className="flex space-x-4"
                   >
@@ -306,7 +287,7 @@ export default function PersonalInformation() {
                   <Input
                     type="text"
                     name="id_number"
-                    value={formState.id_number || ''}
+                    value={formState.id_number ?? ''}
                     onChange={handleInputChange}
                     placeholder="Enter your identification number"
                     className="max-w-xs"
@@ -320,7 +301,7 @@ export default function PersonalInformation() {
                   <Input
                     type="text"
                     name="display_name"
-                    value={formState.display_name || ''}
+                    value={formState.display_name ?? ''}
                     onChange={handleInputChange}
                     placeholder="Enter your full name"
                     required
@@ -331,7 +312,7 @@ export default function PersonalInformation() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Gender</Label>
                   <RadioGroup
-                    value={formState.gender || ''}
+                    value={formState.gender ?? ''}
                     onValueChange={(value) => handleRadioChange('gender', value)}
                     className="flex space-x-4"
                   >
@@ -354,7 +335,7 @@ export default function PersonalInformation() {
                     <Input
                       type="date"
                       name="dob"
-                      value={typeof formState.dob === 'string' ? formState.dob : formState.dob instanceof Date ? formState.dob.toISOString().split('T')[0] : ''}
+                      value={formState.dob ?? ''}
                       onChange={handleInputChange}
                       className="pl-10"
                       required
@@ -381,7 +362,7 @@ export default function PersonalInformation() {
                     <Input
                       type="tel"
                       name="mob_number"
-                      value={formState.mob_number || ''}
+                      value={formState.mob_number ?? ''}
                       onChange={handleInputChange}
                       placeholder="Enter your phone number"
                       className="pl-10"
@@ -394,7 +375,7 @@ export default function PersonalInformation() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Nationality</Label>
                   <Select
-                    value={formState.nationality?.toString() || ''}
+                    value={formState.nationality?.toString() ?? ''}
                     onValueChange={(value) => handleRadioChange('nationality', value)}
                   >
                     <SelectTrigger className="w-full">
@@ -414,7 +395,7 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">Current Country</Label>
                   <Select
-                    value={formState.curr_country?.toString() || ''}
+                    value={formState.curr_country?.toString() ?? ''}
                     onValueChange={(value) => handleSelectChange(value, 'curr_country')}
                   >
                     <SelectTrigger className="w-full">
@@ -422,7 +403,7 @@ export default function PersonalInformation() {
                     </SelectTrigger>
                     <SelectContent>
                       {countries.map((country) => (
-                        <SelectItem key={country._id} value={country.Id.toString()}>
+                        <SelectItem key={country._id as string} value={country.Id?.toString() ?? ''}>
                           {country.Name}
                         </SelectItem>
                       ))}
@@ -434,7 +415,7 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">State</Label>
                   <Select
-                    value={formState.state?.toString() || ''}
+                    value={formState.state?.toString() ?? ''}
                     onValueChange={(value) => handleSelectChange(value, 'state')}
                     disabled={!formState.curr_country}
                   >
@@ -443,7 +424,7 @@ export default function PersonalInformation() {
                     </SelectTrigger>
                     <SelectContent>
                       {states.map((state) => (
-                        <SelectItem key={state._id} value={state.Id.toString()}>
+                        <SelectItem key={state._id as string} value={state.Id?.toString() ?? ''}>
                           {state.Name}
                         </SelectItem>
                       ))}
@@ -455,7 +436,7 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">City</Label>
                   <Select
-                    value={formState.city?.toString() || ''}
+                    value={formState.city?.toString() ?? ''}
                     onValueChange={(value) => handleSelectChange(value, 'city')}
                     disabled={!formState.state}
                   >
@@ -464,7 +445,7 @@ export default function PersonalInformation() {
                     </SelectTrigger>
                     <SelectContent>
                       {cities.map((city) => (
-                        <SelectItem key={city._id} value={city.Id.toString()}>
+                        <SelectItem key={city._id as string} value={city.Id?.toString() ?? ''}>
                           {city.Name}
                         </SelectItem>
                       ))}
@@ -478,7 +459,7 @@ export default function PersonalInformation() {
                   <Input
                     type="text"
                     name="postalcode"
-                    value={formState.postalcode || ''}
+                    value={formState.postalcode ?? ''}
                     onChange={handleInputChange}
                     placeholder="Enter your postal code"
                     className="max-w-xs"
@@ -498,7 +479,7 @@ export default function PersonalInformation() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Are you registered with Department of Social Welfare Malaysia as a person with Disabilities (OKU)?</Label>
                 <RadioGroup
-                  value={formState.disability_status?.toString() || '0'}
+                  value={formState.disability_status?.toString() ?? '0'}
                   onValueChange={(value) => setFormState(prev => ({ ...prev, disability_status: parseInt(value) }))}
                   className="flex space-x-4"
                 >

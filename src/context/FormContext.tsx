@@ -1,50 +1,9 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { createContext, useContext, useState, ReactNode, useEffect, FC } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-
-// Define types for our form data
-export interface FormData {
-  // Personal Information
-  identificationType?: 'malaysianIC' | 'passportNumber';
-  identificationNumber?: string;
-  fullName?: string;
-  displayName?: string;
-  gender?: 'male' | 'female';
-  dateOfBirth?: string;
-  phoneNumber?: string;
-  email?: string;
-  nationality?: 'malaysian' | 'nonMalaysian';
-  race?: string;
-  country?: string;
-  state?: string;
-  city?: string;
-  postcode?: string;
-  isOKU?: boolean;
-  
-  // Current Status
-  scholarshipType?: 'scholarshipLoan' | 'selfFunded'; 
-  academicQualification?: string;
-  institutionType?: 'malaysiaOrExchange' | 'abroad';
-  studyScope?: string;
-  enrollmentDate?: string;
-  expectedGraduationDate?: string;
-  currentYear?: string;
-  gradeType?: 'cgpa' | 'grade' | 'others' | 'noGrade';
-  gradeValue?: string;
-  englishTest?: 'muet' | 'cefr' | 'toefl' | 'ielts' | 'none' | 'other';
-  
-  // Preferences
-  interestedSectors?: string[];
-  interestedRoles?: string[];
-  preferredStates?: string[];
-  
-  // Profile Picture
-  profilePicture?: string;
-}
-
+import { ICoreModelOnboardform } from '@/models/CoreTables';
 interface FormContextProps {
-  formData: FormData;
-  updateFormData: (data: Partial<FormData>) => void;
+  formData: ICoreModelOnboardform;
+  updateFormData: (data: Partial<ICoreModelOnboardform>) => void;
   resetForm: () => void;
   saveStep: (step: string) => Promise<boolean>;
   isSubmitting: boolean;
@@ -54,21 +13,11 @@ interface FormContextProps {
 // Create the form context
 const FormContext = createContext<FormContextProps | undefined>(undefined);
 
-// Steps in the form process
-const formSteps = [
-  'personal-information',
-  'current-status',
-  'preferences',
-  'profile-picture',
-  'overview'
-];
-
 // Provider component
-export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [formData, setFormData] = useState<FormData>({});
+export const FormProvider: FC<{ children: ReactNode }> = ({ children }) => {
+  const [formData, setFormData] = useState<ICoreModelOnboardform>({} as ICoreModelOnboardform);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
 
   // Load saved form data from localStorage on initial render
@@ -103,16 +52,23 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [completedSteps]);
 
   // Update form data
-  const updateFormData = (data: Partial<FormData>) => {
-    setFormData(prevData => ({
-      ...prevData,
+  const updateFormData = (data: Partial<ICoreModelOnboardform>) => {
+    const newFormData = {
+      ...formData,
       ...data
-    }));
+    };
+    setFormData(newFormData as ICoreModelOnboardform);
+    
+    // Update progress whenever form data changes
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('formDataUpdated', { detail: newFormData });
+      window.dispatchEvent(event);
+    }
   };
 
   // Reset form
   const resetForm = () => {
-    setFormData({});
+    setFormData({} as ICoreModelOnboardform);
     setCompletedSteps([]);
     localStorage.removeItem('formData');
     localStorage.removeItem('completedSteps');
@@ -138,22 +94,17 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         
         // Convert dates to proper format
-        if (formData.dateOfBirth) {
-          formDataToSubmit.dateOfBirth = new Date(formData.dateOfBirth).toISOString();
+        if (formData.dob) {
+          formDataToSubmit.dob = new Date(formData.dob).toISOString();
         }
-        if (formData.enrollmentDate) {
-          formDataToSubmit.enrollmentDate = new Date(formData.enrollmentDate).toISOString();
-        }
-        if (formData.expectedGraduationDate) {
-          formDataToSubmit.expectedGraduationDate = new Date(formData.expectedGraduationDate).toISOString();
+        if (formData.entry_time) {
+          formDataToSubmit.entry_time = new Date(formData.entry_time).toISOString();
         }
         
         // Submit to API
         const response = await fetch('/api/submit-form', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formDataToSubmit)
         });
         

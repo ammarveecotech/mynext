@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -7,56 +7,126 @@ import { useForm } from "@/context/FormContext";
 import FormLayout from "@/components/FormLayout";
 import { Search, X, ChevronDown } from "lucide-react";
 
+// Types for master data
+interface MasterDataItem {
+  _id: string;
+  Id: number;
+  Name: string;
+  Code?: string;
+}
+
+interface MasterDataResponse {
+  success: boolean;
+  data: MasterDataItem[];
+  message?: string;
+}
+
 export default function Preferences() {
+  // 1. All hooks at the top level
   const router = useRouter();
   const { data: session, status } = useSession();
   const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
 
-  // Refs for dropdown containers
+  // 2. All refs
   const sectorDropdownRef = useRef<HTMLDivElement>(null);
   const roleDropdownRef = useRef<HTMLDivElement>(null);
   const stateDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Check authentication
+  // State for master data
+  const [masterData, setMasterData] = useState<{
+    sectors: MasterDataItem[];
+    roles: MasterDataItem[];
+    states: MasterDataItem[];
+  }>({
+    sectors: [],
+    roles: [],
+    states: [],
+  });
+
+  const [preferences, setPreferences] = useState({
+    interestedSectors: [] as string[],
+    interestedRoles: [] as string[],
+    preferredStates: [] as string[],
+  });
+
+  const [searchState, setSearchState] = useState({
+    sectorSearch: "",
+    roleSearch: "",
+    stateSearch: "",
+  });
+
+  const [dropdownState, setDropdownState] = useState({
+    sectorDropdownOpen: false,
+    roleDropdownOpen: false,
+    stateDropdownOpen: false,
+  });
+
+  // Fetch master data
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        // Fetch sectors (scope of studies)
+        const sectorsRes = await fetch('/api/master-data/scope_of_studies');
+        const sectorsData: MasterDataResponse = await sectorsRes.json();
+        
+        // Fetch roles (academic qualifications)
+        const rolesRes = await fetch('/api/master-data/academic_qualifications');
+        const rolesData: MasterDataResponse = await rolesRes.json();
+        
+        // Fetch states
+        const statesRes = await fetch('/api/master-data/states');
+        const statesData: MasterDataResponse = await statesRes.json();
+
+        if (sectorsData.success && rolesData.success && statesData.success) {
+          setMasterData({
+            sectors: sectorsData.data,
+            roles: rolesData.data,
+            states: statesData.data,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching master data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load options. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchMasterData();
+  }, [toast]);
+
+  // 4. Authentication effect
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/signin");
     }
   }, [status, router]);
 
-  // Initialize state with data from form context
-  const [interestedSectors, setInterestedSectors] = useState<string[]>(
-    formData?.interestedSectors || []
-  );
-  const [interestedRoles, setInterestedRoles] = useState<string[]>(
-    formData?.interestedRoles || []
-  );
-  const [preferredStates, setPreferredStates] = useState<string[]>(
-    formData?.preferredStates || []
-  );
+  // 5. Form data effect
+  useEffect(() => {
+    if (formData) {
+      setPreferences({
+        interestedSectors: formData.sector ? formData.sector.split(',') : [],
+        interestedRoles: formData.position ? formData.position.split(',') : [],
+        preferredStates: formData.state ? formData.state.split(',') : [],
+      });
+    }
+  }, [formData]);
 
-  // Search inputs
-  const [sectorSearch, setSectorSearch] = useState("");
-  const [roleSearch, setRoleSearch] = useState("");
-  const [stateSearch, setStateSearch] = useState("");
-
-  // Dropdown state
-  const [sectorDropdownOpen, setSectorDropdownOpen] = useState(false);
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
-
-  // Handle clicks outside of dropdowns
+  // 6. Click outside effect
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (sectorDropdownRef.current && !sectorDropdownRef.current.contains(event.target as Node)) {
-        setSectorDropdownOpen(false);
+        setDropdownState(prev => ({ ...prev, sectorDropdownOpen: false }));
       }
       if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
-        setRoleDropdownOpen(false);
+        setDropdownState(prev => ({ ...prev, roleDropdownOpen: false }));
       }
       if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
-        setStateDropdownOpen(false);
+        setDropdownState(prev => ({ ...prev, stateDropdownOpen: false }));
       }
     };
 
@@ -66,7 +136,7 @@ export default function Preferences() {
     };
   }, []);
 
-  // Don't render the form until we confirm authentication
+  // Loading check
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
@@ -79,45 +149,92 @@ export default function Preferences() {
     return null;
   }
 
-  // Available options
-  const sectorOptions = [
-    { value: "healthcare", label: "Healthcare & Pharmaceuticals" },
-    { value: "education", label: "Education & Research" },
-    { value: "tech", label: "Technology & IT" },
-    { value: "finance", label: "Finance & Banking" },
-    { value: "manufacturing", label: "Manufacturing & Engineering" },
-  ];
+  // Filter options based on search
+  const filteredSectors = masterData.sectors.filter(sector => 
+    sector.Name.toLowerCase().includes(searchState.sectorSearch.toLowerCase()) &&
+    !preferences.interestedSectors.includes(sector._id)
+  );
+  
+  const filteredRoles = masterData.roles.filter(role => 
+    role.Name.toLowerCase().includes(searchState.roleSearch.toLowerCase()) &&
+    !preferences.interestedRoles.includes(role._id)
+  );
+  
+  const filteredStates = masterData.states.filter(state => 
+    state.Name.toLowerCase().includes(searchState.stateSearch.toLowerCase()) &&
+    !preferences.preferredStates.includes(state._id)
+  );
 
-  const roleOptions = [
-    { value: "doctor", label: "Doctor (Physician)" },
-    { value: "researcher", label: "Researcher" },
-    { value: "engineer", label: "Engineer" },
-    { value: "developer", label: "Software Developer" },
-    { value: "analyst", label: "Business Analyst" },
-  ];
+  // Get label for value
+  const getSectorLabel = (id: string) => {
+    return masterData.sectors.find(s => s._id === id)?.Name ?? id;
+  };
 
-  const stateOptions = [
-    { value: "kelantan", label: "Kelantan" },
-    { value: "selangor", label: "Selangor" },
-    { value: "kl", label: "Kuala Lumpur" },
-    { value: "penang", label: "Penang" },
-    { value: "johor", label: "Johor" },
-  ];
+  const getRoleLabel = (id: string) => {
+    return masterData.roles.find(r => r._id === id)?.Name ?? id;
+  };
 
-  // Update state when form data changes
-  useEffect(() => {
-    if (formData) {
-      setInterestedSectors(formData.interestedSectors || []);
-      setInterestedRoles(formData.interestedRoles || []);
-      setPreferredStates(formData.preferredStates || []);
+  const getStateLabel = (id: string) => {
+    return masterData.states.find(s => s._id === id)?.Name ?? id;
+  };
+
+  // Handler functions
+  const handleSectorSelect = (sectorId: string) => {
+    if (!preferences.interestedSectors.includes(sectorId)) {
+      setPreferences(prev => ({
+        ...prev,
+        interestedSectors: [...prev.interestedSectors, sectorId]
+      }));
     }
-  }, [formData]);
+    setSearchState(prev => ({ ...prev, sectorSearch: "" }));
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRoleSelect = (roleId: string) => {
+    if (!preferences.interestedRoles.includes(roleId) && preferences.interestedRoles.length < 3) {
+      setPreferences(prev => ({
+        ...prev,
+        interestedRoles: [...prev.interestedRoles, roleId]
+      }));
+    }
+    setSearchState(prev => ({ ...prev, roleSearch: "" }));
+  };
+
+  const handleStateSelect = (stateId: string) => {
+    if (!preferences.preferredStates.includes(stateId) && preferences.preferredStates.length < 3) {
+      setPreferences(prev => ({
+        ...prev,
+        preferredStates: [...prev.preferredStates, stateId]
+      }));
+    }
+    setSearchState(prev => ({ ...prev, stateSearch: "" }));
+  };
+
+  const removeSector = (sectorId: string) => {
+    setPreferences(prev => ({
+      ...prev,
+      interestedSectors: prev.interestedSectors.filter(s => s !== sectorId)
+    }));
+  };
+
+  const removeRole = (roleId: string) => {
+    setPreferences(prev => ({
+      ...prev,
+      interestedRoles: prev.interestedRoles.filter(r => r !== roleId)
+    }));
+  };
+
+  const removeState = (stateId: string) => {
+    setPreferences(prev => ({
+      ...prev,
+      preferredStates: prev.preferredStates.filter(s => s !== stateId)
+    }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     // Validate that at least one option is selected in each category
-    if (interestedSectors.length === 0) {
+    if (preferences.interestedSectors.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please select at least one sector of interest.",
@@ -126,7 +243,7 @@ export default function Preferences() {
       return;
     }
 
-    if (interestedRoles.length === 0) {
+    if (preferences.interestedRoles.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please select at least one role of interest.",
@@ -135,7 +252,7 @@ export default function Preferences() {
       return;
     }
 
-    if (preferredStates.length === 0) {
+    if (preferences.preferredStates.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please select at least one preferred location.",
@@ -145,10 +262,11 @@ export default function Preferences() {
     }
 
     // Update the form context with local state
+    // Convert arrays to comma-separated strings for database storage
     updateFormData({
-      interestedSectors,
-      interestedRoles,
-      preferredStates,
+      sector: preferences.interestedSectors.join(','),
+      position: preferences.interestedRoles.join(','),
+      state: preferences.preferredStates.join(','),
     });
 
     // Save and proceed to next step
@@ -160,68 +278,6 @@ export default function Preferences() {
 
   const handleBack = () => {
     router.push("/current-status");
-  };
-
-  const handleSectorSelect = (sector: string) => {
-    if (!interestedSectors.includes(sector)) {
-      setInterestedSectors([...interestedSectors, sector]);
-    }
-    setSectorSearch("");
-  };
-
-  const handleRoleSelect = (role: string) => {
-    if (!interestedRoles.includes(role) && interestedRoles.length < 3) {
-      setInterestedRoles([...interestedRoles, role]);
-    }
-    setRoleSearch("");
-  };
-
-  const handleStateSelect = (state: string) => {
-    if (!preferredStates.includes(state) && preferredStates.length < 3) {
-      setPreferredStates([...preferredStates, state]);
-    }
-    setStateSearch("");
-  };
-
-  const removeSector = (sector: string) => {
-    setInterestedSectors(interestedSectors.filter(s => s !== sector));
-  };
-
-  const removeRole = (role: string) => {
-    setInterestedRoles(interestedRoles.filter(r => r !== role));
-  };
-
-  const removeState = (state: string) => {
-    setPreferredStates(preferredStates.filter(s => s !== state));
-  };
-
-  // Filter options based on search
-  const filteredSectors = sectorOptions.filter(sector => 
-    sector.label.toLowerCase().includes(sectorSearch.toLowerCase()) &&
-    !interestedSectors.includes(sector.value)
-  );
-  
-  const filteredRoles = roleOptions.filter(role => 
-    role.label.toLowerCase().includes(roleSearch.toLowerCase()) &&
-    !interestedRoles.includes(role.value)
-  );
-  
-  const filteredStates = stateOptions.filter(state => 
-    state.label.toLowerCase().includes(stateSearch.toLowerCase()) &&
-    !preferredStates.includes(state.value)
-  );
-
-  // Get label for value
-  const getSectorLabel = (value: string) => {
-    return sectorOptions.find(s => s.value === value)?.label || value;
-  };
-
-  const getRoleLabel = (value: string) => {
-    return roleOptions.find(r => r.value === value)?.label || value;
-  };
-
-  const getStateLabel = (value: string) => {
-    return stateOptions.find(s => s.value === value)?.label || value;
   };
 
   return (
@@ -236,15 +292,15 @@ export default function Preferences() {
             <div className="relative" ref={sectorDropdownRef}>
               <div 
                 className="flex items-center justify-between border rounded-md cursor-pointer px-3 py-2"
-                onClick={() => setSectorDropdownOpen(!sectorDropdownOpen)}
+                onClick={() => setDropdownState(prev => ({ ...prev, sectorDropdownOpen: !prev.sectorDropdownOpen }))}
               >
                 <div className="flex items-center flex-1">
                   <Search className="h-4 w-4 text-gray-400 mr-2" />
                   <input
                     type="text"
                     placeholder="Search sector"
-                    value={sectorSearch}
-                    onChange={(e) => setSectorSearch(e.target.value)}
+                    value={searchState.sectorSearch}
+                    onChange={(e) => setSearchState(prev => ({ ...prev, sectorSearch: e.target.value }))}
                     className="border-none outline-none w-full focus:outline-none"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -252,24 +308,24 @@ export default function Preferences() {
                 <ChevronDown className="h-4 w-4 text-gray-400" />
               </div>
               
-              {sectorDropdownOpen && (
+              {dropdownState.sectorDropdownOpen && (
                 <div className="absolute z-10 bg-white border rounded-md shadow-md mt-1 w-full max-h-48 overflow-y-auto">
                   {filteredSectors.length > 0 ? (
                     filteredSectors.map((sector) => (
                       <div
-                        key={sector.value}
+                        key={sector._id}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                         onClick={() => {
-                          handleSectorSelect(sector.value);
-                          setSectorDropdownOpen(false);
+                          handleSectorSelect(sector._id);
+                          setDropdownState(prev => ({ ...prev, sectorDropdownOpen: false }));
                         }}
                       >
-                        {sector.label}
+                        {sector.Name}
                       </div>
                     ))
                   ) : (
                     <div className="px-4 py-2 text-gray-500">
-                      {sectorSearch ? "No results found" : "All sectors already selected"}
+                      {searchState.sectorSearch ? "No results found" : "All sectors already selected"}
                     </div>
                   )}
                 </div>
@@ -277,15 +333,15 @@ export default function Preferences() {
             </div>
             
             <div className="flex flex-wrap gap-2 mt-2">
-              {interestedSectors.map((sector) => (
+              {preferences.interestedSectors.map((sectorId) => (
                 <div
-                  key={sector}
+                  key={sectorId}
                   className="flex items-center bg-purple-100 text-purple-700 rounded-lg px-3 py-1.5"
                 >
-                  <span>{getSectorLabel(sector)}</span>
+                  <span>{getSectorLabel(sectorId)}</span>
                   <button
                     type="button"
-                    onClick={() => removeSector(sector)}
+                    onClick={() => removeSector(sectorId)}
                     className="ml-2 text-purple-600 hover:text-purple-800"
                   >
                     <X className="h-4 w-4" />
@@ -303,41 +359,41 @@ export default function Preferences() {
             <div className="relative" ref={roleDropdownRef}>
               <div 
                 className="flex items-center justify-between border rounded-md cursor-pointer px-3 py-2"
-                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                onClick={() => setDropdownState(prev => ({ ...prev, roleDropdownOpen: !prev.roleDropdownOpen }))}
               >
                 <div className="flex items-center flex-1">
                   <Search className="h-4 w-4 text-gray-400 mr-2" />
                   <input
                     type="text"
                     placeholder="Search role"
-                    value={roleSearch}
-                    onChange={(e) => setRoleSearch(e.target.value)}
+                    value={searchState.roleSearch}
+                    onChange={(e) => setSearchState(prev => ({ ...prev, roleSearch: e.target.value }))}
                     className="border-none outline-none w-full focus:outline-none"
                     onClick={(e) => e.stopPropagation()}
-                    disabled={interestedRoles.length >= 3}
+                    disabled={preferences.interestedRoles.length >= 3}
                   />
                 </div>
                 <ChevronDown className="h-4 w-4 text-gray-400" />
               </div>
               
-              {roleDropdownOpen && interestedRoles.length < 3 && (
+              {dropdownState.roleDropdownOpen && preferences.interestedRoles.length < 3 && (
                 <div className="absolute z-10 bg-white border rounded-md shadow-md mt-1 w-full max-h-48 overflow-y-auto">
                   {filteredRoles.length > 0 ? (
                     filteredRoles.map((role) => (
                       <div
-                        key={role.value}
+                        key={role._id}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                         onClick={() => {
-                          handleRoleSelect(role.value);
-                          setRoleDropdownOpen(false);
+                          handleRoleSelect(role._id);
+                          setDropdownState(prev => ({ ...prev, roleDropdownOpen: false }));
                         }}
                       >
-                        {role.label}
+                        {role.Name}
                       </div>
                     ))
                   ) : (
                     <div className="px-4 py-2 text-gray-500">
-                      {roleSearch ? "No results found" : "No more roles available"}
+                      {searchState.roleSearch ? "No results found" : "No more roles available"}
                     </div>
                   )}
                 </div>
@@ -345,15 +401,15 @@ export default function Preferences() {
             </div>
             
             <div className="flex flex-wrap gap-2 mt-2">
-              {interestedRoles.map((role) => (
+              {preferences.interestedRoles.map((roleId) => (
                 <div
-                  key={role}
+                  key={roleId}
                   className="flex items-center bg-purple-100 text-purple-700 rounded-lg px-3 py-1.5"
                 >
-                  <span>{getRoleLabel(role)}</span>
+                  <span>{getRoleLabel(roleId)}</span>
                   <button
                     type="button"
-                    onClick={() => removeRole(role)}
+                    onClick={() => removeRole(roleId)}
                     className="ml-2 text-purple-600 hover:text-purple-800"
                   >
                     <X className="h-4 w-4" />
@@ -371,41 +427,41 @@ export default function Preferences() {
             <div className="relative" ref={stateDropdownRef}>
               <div 
                 className="flex items-center justify-between border rounded-md cursor-pointer px-3 py-2"
-                onClick={() => setStateDropdownOpen(!stateDropdownOpen)}
+                onClick={() => setDropdownState(prev => ({ ...prev, stateDropdownOpen: !prev.stateDropdownOpen }))}
               >
                 <div className="flex items-center flex-1">
                   <Search className="h-4 w-4 text-gray-400 mr-2" />
                   <input
                     type="text"
                     placeholder="Search state"
-                    value={stateSearch}
-                    onChange={(e) => setStateSearch(e.target.value)}
+                    value={searchState.stateSearch}
+                    onChange={(e) => setSearchState(prev => ({ ...prev, stateSearch: e.target.value }))}
                     className="border-none outline-none w-full focus:outline-none"
                     onClick={(e) => e.stopPropagation()}
-                    disabled={preferredStates.length >= 3}
+                    disabled={preferences.preferredStates.length >= 3}
                   />
                 </div>
                 <ChevronDown className="h-4 w-4 text-gray-400" />
               </div>
               
-              {stateDropdownOpen && preferredStates.length < 3 && (
+              {dropdownState.stateDropdownOpen && preferences.preferredStates.length < 3 && (
                 <div className="absolute z-10 bg-white border rounded-md shadow-md mt-1 w-full max-h-48 overflow-y-auto">
                   {filteredStates.length > 0 ? (
                     filteredStates.map((state) => (
                       <div
-                        key={state.value}
+                        key={state._id}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                         onClick={() => {
-                          handleStateSelect(state.value);
-                          setStateDropdownOpen(false);
+                          handleStateSelect(state._id);
+                          setDropdownState(prev => ({ ...prev, stateDropdownOpen: false }));
                         }}
                       >
-                        {state.label}
+                        {state.Name}
                       </div>
                     ))
                   ) : (
                     <div className="px-4 py-2 text-gray-500">
-                      {stateSearch ? "No results found" : "No more states available"}
+                      {searchState.stateSearch ? "No results found" : "No more states available"}
                     </div>
                   )}
                 </div>
@@ -413,15 +469,15 @@ export default function Preferences() {
             </div>
             
             <div className="flex flex-wrap gap-2 mt-2">
-              {preferredStates.map((state) => (
+              {preferences.preferredStates.map((stateId) => (
                 <div
-                  key={state}
+                  key={stateId}
                   className="flex items-center bg-purple-100 text-purple-700 rounded-lg px-3 py-1.5"
                 >
-                  <span>{getStateLabel(state)}</span>
+                  <span>{getStateLabel(stateId)}</span>
                   <button
                     type="button"
-                    onClick={() => removeState(state)}
+                    onClick={() => removeState(stateId)}
                     className="ml-2 text-purple-600 hover:text-purple-800"
                   >
                     <X className="h-4 w-4" />

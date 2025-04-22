@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/db';
-import CoreModelOnboardform from '@/models/CoreModelOnboardform';
+import { CoreModelOnboardform } from '@/models/CoreTables';
 import { getSession } from 'next-auth/react';
 
 type SubmitFormResponse = {

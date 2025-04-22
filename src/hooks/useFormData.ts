@@ -2,63 +2,14 @@ import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
-
-// Define the form data types based on our database model
-export interface FormData {
-  // Step tracking
-  step?: number;
-
-  // Page 1: Personal Information
-  id_type?: number;
-  id_number?: string;
-  display_name?: string;
-  gender?: string;
-  dob?: Date | string;
-  mob_code?: string;
-  mob_number?: string;
-  nationality?: number;
-  race?: string;
-  curr_country?: string;
-  state?: string;
-  city?: string;
-  postalcode?: string;
-  disability_status?: number;
-  profile_picture?: string;
-  disability_code?: string;
-  talent_status?: string;
-
-  // Page 2: Current Status
-  scholar_status?: string;
-  scholar_data?: string;
-  curr_qualification?: string;
-  inst_name?: string;
-  university?: string;
-  campus?: string;
-  faculty?: string;
-  study_program?: string;
-  inst_country?: string;
-  scope?: string;
-  curr_study_year?: string;
-  grade_status?: string;
-  grade?: string;
-  english_tests?: string;
-  english_score?: number;
-
-  // System fields
-  user_id?: string;
-}
-
-export interface MasterDataItem {
-  _id: string;
-  name: string;
-  code?: string;
-}
+import { ICoreModelOnboardform } from "@/models/CoreTables";
+import { IMasterBase } from "@/models/MasterTables";
 
 export const useFormData = () => {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<FormData>({});
+  const [formData, setFormData] = useState<Partial<ICoreModelOnboardform>>({});
 
   // Fetch the user's form data
   const fetchFormData = useCallback(async () => {
@@ -92,7 +43,7 @@ export const useFormData = () => {
         // If we get a 404, it means the user doesn't have form data yet
         if (response.status === 404) {
           console.log("No form data found for user, initializing empty data");
-          const emptyData = { user_id: userId };
+          const emptyData: Partial<ICoreModelOnboardform> = { user_id: userId };
           setFormData(emptyData);
           return emptyData;
         }
@@ -100,7 +51,7 @@ export const useFormData = () => {
         // For any other non-200 response, log it but still return empty data
         if (!response.ok) {
           console.log(`API returned status ${response.status}`);
-          const emptyData = { user_id: userId };
+          const emptyData: Partial<ICoreModelOnboardform> = { user_id: userId };
           setFormData(emptyData);
           return emptyData;
         }
@@ -114,7 +65,7 @@ export const useFormData = () => {
           return result.data;
         } else {
           console.log("API returned success:false or no data");
-          const emptyData = { user_id: userId };
+          const emptyData: Partial<ICoreModelOnboardform> = { user_id: userId };
           setFormData(emptyData);
           return emptyData;
         }
@@ -125,13 +76,13 @@ export const useFormData = () => {
         } else {
           console.error("Fetch error:", fetchError);
         }
-        const emptyData = { user_id: userId };
+        const emptyData: Partial<ICoreModelOnboardform> = { user_id: userId };
         setFormData(emptyData);
         return emptyData;
       }
     } catch (error) {
       console.error("Unexpected error in fetchFormData:", error);
-      const emptyData = { user_id: session?.user?.id || "" };
+      const emptyData: Partial<ICoreModelOnboardform> = { user_id: session?.user?.id ?? "" };
       setFormData(emptyData);
       return emptyData;
     } finally {
@@ -140,7 +91,7 @@ export const useFormData = () => {
   }, [session?.user?.id]);
 
   // Save form data
-  const saveFormData = async (data: FormData, nextPage?: string) => {
+  const saveFormData = async (data: Partial<ICoreModelOnboardform>, nextPage?: string) => {
     try {
       setLoading(true);
 
@@ -179,7 +130,7 @@ export const useFormData = () => {
 
         return true;
       } else {
-        toast.error(result.message || "Failed to save form data");
+        toast.error(result.message ?? "Failed to save form data");
         return false;
       }
     } catch (error) {
@@ -216,7 +167,7 @@ export const useFormData = () => {
         setFormData((prev) => ({ ...prev, step }));
         return true;
       } else {
-        toast.error(result.message || "Failed to update step");
+        toast.error(result.message ?? "Failed to update step");
         return false;
       }
     } catch (error) {
@@ -233,7 +184,7 @@ export const useFormData = () => {
     table: string,
     parentId?: string,
     parentField?: string
-  ): Promise<MasterDataItem[]> => {
+  ): Promise<IMasterBase[]> => {
     try {
       let url = `/api/master-data/${table}`;
 

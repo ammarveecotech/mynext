@@ -1,28 +1,31 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 // Base interface for all master tables
-interface IMasterBase extends Document {
+export interface IMasterBase extends Document {
+  _id: string;
+  Id: number;
   Name: string;
-  Id?: number;
-  IsDeleted?: boolean;
+  IsDeleted: boolean;
+  CreatedDate?: string;
+  UpdatedDate?: string;
+  UniversityId?: number;
 }
 
 // Master Universities (master_universities)
 export interface IMasterUniversity extends IMasterBase {
   Type?: string;
   IsCustom?: number;
-  CreatedDate?: Date;
-  UpdatedDate?: Date;
 }
 
 const MasterUniversitySchema = new Schema({
+  Id: { type: Number, required: true },
   Name: { type: String, required: true },
-  Id: { type: Number },
   IsDeleted: { type: Boolean, default: false },
-  CreatedDate: { type: Date },
-  UpdatedDate: { type: Date },
+  CreatedDate: { type: String },
+  UpdatedDate: { type: String },
   Type: { type: String },
-  IsCustom: { type: Number }
+  IsCustom: { type: Number },
+  UniversityId: { type: Number }
 });
 
 // Master Countries (master_countries)
@@ -72,22 +75,22 @@ const MasterCountrySchema = new Schema({
 
 // Master States (master_states)
 export interface IMasterState extends IMasterBase {
-  CountryId: number; // Reference to country
-  CountryCode?: string;
-  CountryName?: string;
-  StateCode?: string;
-  Type?: string;
+  CountryId: number;
+  CountryCode: string;
+  CountryName: string;
+  StateCode: string;
+  Type?: string | null;
   Latitude?: string;
   Longitude?: string;
 }
 
 const MasterStateSchema = new Schema({
+  Id: { type: Number, required: true },
   Name: { type: String, required: true },
-  Id: { type: Number },
   CountryId: { type: Number, required: true },
-  CountryCode: { type: String },
-  CountryName: { type: String },
-  StateCode: { type: String },
+  CountryCode: { type: String, required: true },
+  CountryName: { type: String, required: true },
+  StateCode: { type: String, required: true },
   Type: { type: String },
   Latitude: { type: String },
   Longitude: { type: String },
@@ -174,8 +177,6 @@ export interface IMasterScholarshipType extends IMasterBase {
   Title: string;
   IsDisabled: boolean;
   UniversityId: number;
-  CreatedDate?: Date;
-  UpdatedDate?: Date;
 }
 
 const MasterScholarshipTypeSchema = new Schema({
@@ -204,42 +205,32 @@ const MasterScholarshipSubtypeSchema = new Schema({
 
 // Master Academic Qualifications (master_academic_qualifications)
 export interface IMasterAcademicQualification extends IMasterBase {
-  Sequence?: number;
-  EnumValue?: number;
-  UniversityId?: number;
-  CreatedDate?: string;
-  UpdatedDate?: string;
+  Sequence: number;
+  EnumValue: number;
 }
 
 const MasterAcademicQualificationSchema = new Schema({
-  Id: { type: Number },
+  Id: { type: Number, required: true },
   Name: { type: String, required: true },
-  Sequence: { type: Number },
-  EnumValue: { type: Number },
-  UniversityId: { type: Number },
+  Sequence: { type: Number, required: true },
+  EnumValue: { type: Number, required: true },
+  UniversityId: { type: Number, required: true },
   IsDeleted: { type: Boolean, default: false },
   CreatedDate: { type: String },
   UpdatedDate: { type: String }
 });
 
 // Master Scope of Studies (master_scope_of_studies)
-export interface IMasterScopeOfStudy {
-  _id?: string;
-  Id: number;
-  CreatedDate: string;
-  IsDeleted: boolean;
-  Name: string;
-  UniversityId: number;
-  UpdatedDate: string;
+export interface IMasterScopeOfStudy extends IMasterBase {
+  // No additional fields beyond base interface
 }
 
 const MasterScopeOfStudySchema = new Schema({
-  _id: { type: String },
   Id: { type: Number, required: true },
-  CreatedDate: { type: String },
-  IsDeleted: { type: Boolean, default: false },
   Name: { type: String, required: true },
-  UniversityId: { type: Number },
+  UniversityId: { type: Number, required: true },
+  IsDeleted: { type: Boolean, default: false },
+  CreatedDate: { type: String },
   UpdatedDate: { type: String }
 });
 

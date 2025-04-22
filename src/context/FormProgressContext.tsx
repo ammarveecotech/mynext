@@ -1,10 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
-import { FormData } from '@/hooks/useFormData';
+import { ICoreModelOnboardform } from '@/models/CoreTables';
 
 // Define field groups for each step
-const PERSONAL_INFO_FIELDS = [
+const PERSONAL_INFO_FIELDS: (keyof ICoreModelOnboardform)[] = [
   'id_type',
   'id_number',
   'display_name',
@@ -12,25 +12,31 @@ const PERSONAL_INFO_FIELDS = [
   'dob',
   'mob_number',
   'nationality',
-  'curr_country'
+  'curr_country',
+  'state',
+  'city',
+  'postalcode',
+  'disability_status'
 ];
 
-const CURRENT_STATUS_FIELDS = [
+const CURRENT_STATUS_FIELDS: (keyof ICoreModelOnboardform)[] = [
   'scholar_status',
   'curr_qualification',
-  'inst_name',
+  'insti_name',
   'scope',
   'curr_study_year',
-  'grade_status'
+  'grade_status',
+  'grade',
+  'english_tests'
 ];
 
-const PREFERENCES_FIELDS = [
-  'interestedSectors',
-  'interestedRoles',
-  'preferredStates'
+const PREFERENCES_FIELDS: (keyof ICoreModelOnboardform)[] = [
+  'sector',
+  'role',
+  'state'
 ];
 
-const PROFILE_PICTURE_FIELDS = [
+const PROFILE_PICTURE_FIELDS: (keyof ICoreModelOnboardform)[] = [
   'profile_picture'
 ];
 
@@ -47,7 +53,7 @@ interface FormProgress {
 // Create context
 interface FormProgressContextType {
   progress: FormProgress;
-  updateProgress: (formData: FormData) => void;
+  updateProgress: (formData: ICoreModelOnboardform) => void;
 }
 
 const FormProgressContext = createContext<FormProgressContextType | undefined>(undefined);
@@ -69,20 +75,66 @@ export const FormProgressProvider: React.FC<{children: React.ReactNode}> = ({ ch
   
   useEffect(() => {
     setIsClient(true);
+    
+    // Add event listener for form data updates
+    const handleFormDataUpdate = (event: CustomEvent<ICoreModelOnboardform>) => {
+      if (event.detail) {
+        updateProgress(event.detail);
+      }
+    };
+    
+    window.addEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('formDataUpdated', handleFormDataUpdate as EventListener);
+    };
   }, []);
 
-  const calculateFieldProgress = (formData: FormData, fields: string[]): number => {
+  const calculateFieldProgress = (formData: ICoreModelOnboardform, fields: string[]): number => {
     if (!formData) return 0;
     
     const filledFields = fields.filter(field => {
-      const value = formData[field as keyof FormData];
+      const value = formData[field as keyof ICoreModelOnboardform];
+      
+      // Handle arrays
+      if (Array.isArray(value)) {
+        if (field === 'interestedSectors') return value.length > 0;
+        if (field === 'interestedRoles') return value.length === 3;
+        if (field === 'preferredStates') return value.length === 3;
+        return value.length > 0;
+      }
+      
+      // Handle optional fields
+      if (field === 'profilePicture') {
+        return true; // Profile picture is optional
+      }
+      
+      if (field === 'grade' && formData.grade_status === 'noGrade') {
+        return true; // Grade is optional if grade_status is noGrade
+      }
+      
+      if (field === 'english_tests') {
+        return value !== undefined && value !== null && value !== '';
+      }
+      
+      // Handle fields that are dependent on other fields
+      if (field === 'state' && !formData.curr_country) {
+        return true; // State is optional if no country is selected
+      }
+      
+      if (field === 'city' && !formData.state) {
+        return true; // City is optional if no state is selected
+      }
+      
+      // Handle regular fields
       return value !== undefined && value !== null && value !== '';
     });
     
-    return Math.round((filledFields.length / fields.length) * 100);
+    const progress = (filledFields.length / fields.length) * 100;
+    return Math.round(progress);
   };
 
-  const updateProgress = (formData: FormData) => {
+  const updateProgress = (formData: ICoreModelOnboardform) => {
     // Skip on server-side rendering
     if (typeof window === 'undefined' || !isClient) {
       console.log("FormProgressContext - Not updating progress on server side");
@@ -108,19 +160,19 @@ export const FormProgressProvider: React.FC<{children: React.ReactNode}> = ({ ch
     // Count filled fields across all sections
     const filledFieldsCount = 
       PERSONAL_INFO_FIELDS.filter(field => {
-        const value = formData[field as keyof FormData];
+        const value = formData[field as keyof ICoreModelOnboardform];
         return value !== undefined && value !== null && value !== '';
       }).length +
       CURRENT_STATUS_FIELDS.filter(field => {
-        const value = formData[field as keyof FormData];
+        const value = formData[field as keyof ICoreModelOnboardform];
         return value !== undefined && value !== null && value !== '';
       }).length +
       PREFERENCES_FIELDS.filter(field => {
-        const value = formData[field as keyof FormData];
+        const value = formData[field as keyof ICoreModelOnboardform];
         return value !== undefined && value !== null && value !== '';
       }).length +
       PROFILE_PICTURE_FIELDS.filter(field => {
-        const value = formData[field as keyof FormData];
+        const value = formData[field as keyof ICoreModelOnboardform];
         return value !== undefined && value !== null && value !== '';
       }).length;
     

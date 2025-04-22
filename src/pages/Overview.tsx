@@ -1,29 +1,43 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { useFormData } from "@/hooks/useFormData";
 import FormLayout from "@/components/FormLayout";
 import { Button } from "@/components/ui/button";
 import { Check, User as UserIcon } from "lucide-react";
-import { ICoreModelOnboardform } from '@/models/CoreModelOnboardform';
+import { ICoreModelOnboardform } from '@/models/CoreTables';
 
 export default function Overview() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { formData } = useFormData();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Check authentication
   useEffect(() => {
-    if (!session) {
-      router.push("/signin");
+    if (status === "unauthenticated") {
+      router.replace("/signin");
     }
-  }, [session, router]);
+  }, [status, router]);
+
+  // Don't render the form until we confirm authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0c1b38]">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null;
+  }
 
   const handleBack = () => {
     router.push("/preferences");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -31,33 +45,36 @@ export default function Overview() {
       // Convert form data to match the database schema
       const submissionData: Partial<ICoreModelOnboardform> = {
         // Personal Information
-        id_type: formData?.id_type || 1,
+        id_type: formData?.id_type ?? 1,
         id_number: formData?.id_number,
         display_name: formData?.display_name,
         gender: formData?.gender,
-        dob: formData?.dob ? new Date(formData.dob) : undefined,
+        dob: formData?.dob ? new Date(formData.dob).toISOString() : undefined,
         mob_code: formData?.mob_code,
         mob_number: formData?.mob_number,
-        nationality: formData?.nationality,
+        nationality: typeof formData?.nationality === 'string' ? parseInt(formData.nationality) : formData?.nationality,
         race: formData?.race,
-        curr_country: formData?.curr_country,
-        state: formData?.state,
-        city: formData?.city,
+        curr_country: formData?.curr_country?.toString(),
+        state: formData?.state?.toString(),
+        city: formData?.city?.toString(),
         postalcode: formData?.postalcode,
         disability_status: formData?.disability_status,
         disability_code: formData?.disability_code,
-        talent_status: formData?.talent_status,
+        talent_status: formData?.talent_status?.toString(),
+        
+        // Profile Picture
+        profile_picture: formData?.profile_picture,
         
         // Current Status
         scholar_status: formData?.scholar_status,
         scholar_data: formData?.scholar_data,
         curr_qualification: formData?.curr_qualification,
-        inst_name: formData?.inst_name,
+        insti_name: formData?.insti_name,
         university: formData?.university,
         campus: formData?.campus,
         faculty: formData?.faculty,
         study_program: formData?.study_program,
-        inst_country: formData?.inst_country,
+        insti_country: formData?.insti_country,
         scope: formData?.scope,
         curr_study_year: formData?.curr_study_year,
         grade_status: formData?.grade_status,
@@ -86,7 +103,7 @@ export default function Overview() {
       } else {
         const errorData = await response.json();
         console.error("Failed to submit form:", errorData);
-        throw new Error(errorData.message || 'Failed to submit form');
+        throw new Error(errorData.message ?? 'Failed to submit form');
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -95,10 +112,6 @@ export default function Overview() {
       setIsSubmitting(false);
     }
   };
-
-  if (!session) {
-    return null;
-  }
 
   return (
     <FormLayout title="Profile Overview">
@@ -118,32 +131,32 @@ export default function Overview() {
           </div>
 
           <div className="flex items-start mb-8">
-            <div className="w-24 h-24 bg-purple-600 rounded-full flex items-center justify-center">
+            <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-purple-200">
               {formData?.profile_picture ? (
                 <img 
-                  src={formData.profile_picture.toString()} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover rounded-full" 
+                  src={formData.profile_picture} 
+                  alt={formData?.display_name ?? "Profile"} 
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <UserIcon className="w-12 h-12 text-white" />
+                <UserIcon className="w-12 h-12 text-purple-400" />
               )}
             </div>
             
             <div className="ml-6 space-y-2">
-              <h3 className="text-lg font-medium">{formData?.display_name || "bedump tan"}</h3>
-              <p className="text-gray-500">{session?.user?.email || "bedummy777@gmail.com"}</p>
+              <h3 className="text-lg font-medium">{formData?.display_name ?? "bedump tan"}</h3>
+              <p className="text-gray-500">{session?.user?.email ?? "bedummy777@gmail.com"}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-y-6">
             <div>
               <p className="text-sm text-gray-500">Identification (Malaysian IC)</p>
-              <p className="text-purple-600">{formData?.id_number || "930908075544"}</p>
+              <p className="text-purple-600">{formData?.id_number ?? "930908075544"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Full Name (as per passport or IC)</p>
-              <p className="text-purple-600">{formData?.display_name || "bedump tan"}</p>
+              <p className="text-purple-600">{formData?.display_name ?? "bedump tan"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Gender</p>
@@ -155,11 +168,11 @@ export default function Overview() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Phone Number</p>
-              <p className="text-purple-600">{`${formData?.mob_code || "+60"}${formData?.mob_number || "0129888044"}`}</p>
+              <p className="text-purple-600">{`${formData?.mob_code ?? "+60"}${formData?.mob_number ?? "0129888044"}`}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Email</p>
-              <p className="text-purple-600">{session?.user?.email || "bedummy777@gmail.com"}</p>
+              <p className="text-purple-600">{session?.user?.email ?? "bedummy777@gmail.com"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Nationality</p>
@@ -171,7 +184,7 @@ export default function Overview() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Race</p>
-              <p className="text-purple-600">{formData?.race || "Malay"}</p>
+              <p className="text-purple-600">{formData?.race ?? "Malay"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Where do you stay?</p>
@@ -207,7 +220,7 @@ export default function Overview() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Postcode</p>
-              <p className="text-purple-600">{formData?.postalcode || "79800"}</p>
+              <p className="text-purple-600">{formData?.postalcode ?? "79800"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">OKU</p>
@@ -215,7 +228,7 @@ export default function Overview() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Display Name</p>
-              <p className="text-purple-600">{formData?.display_name || "-"}</p>
+              <p className="text-purple-600">{formData?.display_name ?? "-"}</p>
             </div>
           </div>
         </div>
@@ -237,11 +250,11 @@ export default function Overview() {
           <div className="space-y-6">
             <div>
               <p className="text-sm text-gray-500">What's your scholarship type?</p>
-              <p className="text-purple-600">{formData?.scholar_status || "MARA (Scholarship)"}</p>
+              <p className="text-purple-600">{formData?.scholar_status ?? "MARA (Scholarship)"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">What's your current academic qualification?</p>
-              <p className="text-purple-600">{formData?.curr_qualification || "-"}</p>
+              <p className="text-purple-600">{formData?.curr_qualification ?? "-"}</p>
             </div>
           </div>
         </div>
@@ -258,6 +271,7 @@ export default function Overview() {
           </Button>
           <Button
             type="submit"
+            onClick={handleSubmit}
             className="bg-purple-600 hover:bg-purple-700 text-white px-8"
             disabled={isSubmitting}
           >
