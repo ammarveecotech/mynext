@@ -52,15 +52,12 @@ const SidebarItem = ({ icon: Icon, label, href, active, completed, step, progres
         "flex items-center justify-center h-8 w-8 rounded-full transition-colors",
         active 
           ? "bg-white text-[#6366f1]" 
-          : isHighlighted 
+          : isCompleted 
             ? "bg-[#6366f1] text-white" 
             : "bg-gray-200 text-gray-400"
       )}>
-        {isCompleted ? (
-          <CheckIcon className="w-5 h-5" />
-        ) : (
-          <Icon className="h-4 w-4" />
-        )}
+        {/* Always show the icon, but with different background based on completion status */}
+        <Icon className="h-4 w-4" />
       </div>
       <span className="font-medium">{label}</span>
       {!active && <ChevronRight className="h-4 w-4 ml-auto" />}
