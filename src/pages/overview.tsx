@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
-import { useFormData } from "@/hooks/useFormData";
+import { useForm } from "@/context/FormContext";
 import FormLayout from "@/components/FormLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -11,7 +11,7 @@ import { ICoreModelOnboardform } from '@/models/CoreTables';
 export default function Overview() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { formData } = useFormData();
+  const { formData } = useForm();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -212,59 +212,47 @@ export default function Overview() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Phone Number</p>
-              <p className="text-purple-600">{`${formData?.mob_code ?? "+60"}${formData?.mob_number ?? "0129888044"}`}</p>
+              <p className="text-purple-600">{formData?.mob_number ? `${formData?.mob_code || ''}${formData?.mob_number}` : '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Email</p>
-              <p className="text-purple-600">{session?.user?.email ?? "bedummy777@gmail.com"}</p>
+              <p className="text-purple-600">{session?.user?.email || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Nationality</p>
               <p className="text-purple-600">
                 {formData?.nationality 
                   ? (formData.nationality.toString() === '1' ? 'Malaysian' : formData.nationality) 
-                  : "Malaysian"}
+                  : '-'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Race</p>
-              <p className="text-purple-600">{formData?.race ?? "Malay"}</p>
+              <p className="text-purple-600">{formData?.race || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Where do you stay?</p>
               <p className="text-purple-600">
                 {formData?.curr_country 
                   ? (formData.curr_country.toString() === '1' ? 'Malaysia' : formData.curr_country)
-                  : "Malaysia"}
+                  : '-'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">State</p>
               <p className="text-purple-600">
-                {formData?.state 
-                  ? (formData.state.toString() === '1' 
-                      ? 'Selangor' 
-                      : formData.state.toString() === '2' 
-                        ? 'Kuala Lumpur' 
-                        : formData.state)
-                  : "Johor"}
+                {formData?.state || '-'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">City</p>
               <p className="text-purple-600">
-                {formData?.city 
-                  ? (formData.city.toString() === '1'
-                      ? 'Shah Alam'
-                      : formData.city.toString() === '2'
-                        ? 'Petaling Jaya'
-                        : formData.city)
-                  : "Bandar Maharani"}
+                {formData?.city || '-'}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Postcode</p>
-              <p className="text-purple-600">{formData?.postalcode ?? "79800"}</p>
+              <p className="text-purple-600">{formData?.postalcode || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">OKU</p>
@@ -294,7 +282,7 @@ export default function Overview() {
           <div className="space-y-6">
             <div>
               <p className="text-sm text-gray-500">What's your scholarship type?</p>
-              <p className="text-purple-600">{formData?.scholar_status ?? "MARA (Scholarship)"}</p>
+              <p className="text-purple-600">{formData?.scholar_status || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">What's your current academic qualification?</p>
