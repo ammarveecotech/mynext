@@ -22,6 +22,54 @@ export default function Overview() {
     }
   }, [status, router]);
 
+  // Overview data state
+  const [overviewData, setOverviewData] = useState<{
+    // Personal Info
+    stateName?: string;
+    cityName?: string;
+    nationalityName?: string;
+    countryName?: string;
+    
+    // Current Status
+    scholarshipType?: string;
+    academicQualification?: string;
+    universityName?: string;
+    campusName?: string;
+    facultyName?: string;
+    studyProgramName?: string;
+    instituteCountryName?: string;
+    scopeOfStudyName?: string;
+    gradeName?: string;
+    englishTestName?: string;
+    
+    // Preferences
+    preferredStateNames?: string[];
+  }>({});
+  
+  // Fetch all overview data directly from database
+  useEffect(() => {
+    const fetchOverviewData = async () => {
+      try {
+        const response = await fetch('/api/master-data/get-overview-data');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setOverviewData(result.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching overview data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load overview data. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    fetchOverviewData();
+  }, [toast]);
+
   // Don't render the form until we confirm authentication
   if (status === "loading") {
     return (
@@ -220,11 +268,7 @@ export default function Overview() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Nationality</p>
-              <p className="text-purple-600">
-                {formData?.nationality 
-                  ? (formData.nationality.toString() === '1' ? 'Malaysian' : formData.nationality) 
-                  : '-'}
-              </p>
+              <p className="text-purple-600">{overviewData?.nationalityName || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Race</p>
@@ -232,23 +276,15 @@ export default function Overview() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Where do you stay?</p>
-              <p className="text-purple-600">
-                {formData?.curr_country 
-                  ? (formData.curr_country.toString() === '1' ? 'Malaysia' : formData.curr_country)
-                  : '-'}
-              </p>
+              <p className="text-purple-600">{overviewData?.countryName || '-'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">State</p>
-              <p className="text-purple-600">
-                {formData?.state || '-'}
-              </p>
+              <p className="text-sm text-gray-500">Current State</p>
+              <p className="text-purple-600">{overviewData?.stateName || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">City</p>
-              <p className="text-purple-600">
-                {formData?.city || '-'}
-              </p>
+              <p className="text-purple-600">{overviewData?.cityName || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Postcode</p>
@@ -265,6 +301,38 @@ export default function Overview() {
           </div>
         </div>
 
+        {/* Preferences */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h2 className="text-xl font-medium">Preferences</h2>
+            <Button
+              variant="link"
+              className="text-red-500 hover:text-red-600 text-sm font-normal p-0"
+              onClick={() => router.push("/preferences")}
+              type="button"
+            >
+              Edit
+            </Button>
+          </div>
+
+          <div className="space-y-6">
+            {overviewData?.preferredStateNames && overviewData.preferredStateNames.length > 0 && (
+              <div>
+                <p className="text-sm text-gray-500">Preferred States</p>
+                <p className="text-purple-600">{overviewData.preferredStateNames.join(', ')}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-sm text-gray-500">Interested Sectors</p>
+              <p className="text-purple-600">{formData?.sector || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Interested Positions</p>
+              <p className="text-purple-600">{formData?.position || '-'}</p>
+            </div>
+          </div>
+        </div>
+        
         {/* Current Status */}
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b pb-2">
@@ -282,12 +350,64 @@ export default function Overview() {
           <div className="space-y-6">
             <div>
               <p className="text-sm text-gray-500">What's your scholarship type?</p>
-              <p className="text-purple-600">{formData?.scholar_status || '-'}</p>
+              <p className="text-purple-600">{overviewData?.scholarshipType || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">What's your current academic qualification?</p>
-              <p className="text-purple-600">{formData?.curr_qualification ?? "-"}</p>
+              <p className="text-purple-600">{overviewData?.academicQualification || '-'}</p>
             </div>
+          </div>
+          
+          <div className="space-y-6">
+            <div>
+              <p className="text-sm text-gray-500">Your University</p>
+              <p className="text-purple-600">{overviewData?.universityName || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Year</p>
+              <p className="text-purple-600">{formData?.curr_study_year ?? "-"}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-y-6">
+              <div>
+                <p className="text-sm text-gray-500">Faculty</p>
+                <p className="text-purple-600">{overviewData?.facultyName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Study Program</p>
+                <p className="text-purple-600">{overviewData?.studyProgramName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Institute Country</p>
+                <p className="text-purple-600">{overviewData?.instituteCountryName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Scope</p>
+                <p className="text-purple-600">{overviewData?.scopeOfStudyName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Grade Type</p>
+                <p className="text-purple-600">{overviewData?.gradeName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">English Test</p>
+                <p className="text-purple-600">{overviewData?.englishTestName || '-'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Picture */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h2 className="text-xl font-medium">Profile Picture</h2>
+            <Button
+              variant="link"
+              className="text-red-500 hover:text-red-600 text-sm font-normal p-0"
+              onClick={() => router.push("/profile-picture")}
+              type="button"
+            >
+              Edit
+            </Button>
           </div>
         </div>
 
