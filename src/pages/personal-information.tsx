@@ -1,24 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from '@/components/ui/use-toast';
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
 import { User, Calendar, Phone } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/section-heading';
 import FormLayout from '@/components/FormLayout';
-import { useFormData } from "@/hooks/useFormData";
+import { useForm } from "@/context/FormContext";
 import { IMasterCountry, IMasterState, IMasterCity } from '@/models/MasterTables';
 import { ICoreModelOnboardform } from '@/models/CoreTables';
 
 export default function PersonalInformation() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { formData, fetchFormData, saveFormData } = useFormData();
+  const { formData, updateFormData, saveStep, isSubmitting } = useForm();
   const { toast } = useToast();
   
   // Master data states
@@ -26,13 +26,12 @@ export default function PersonalInformation() {
   const [states, setStates] = useState<IMasterState[]>([]);
   const [cities, setCities] = useState<IMasterCity[]>([]);
   
-  // Local form state
-  const [formState, setFormState] = useState<Partial<ICoreModelOnboardform>>({});
+  // UI state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch master data from MongoDB
-  const fetchMasterData = async () => {
+  const fetchMasterData = useCallback(async () => {
     try {
       // Fetch countries
       const countriesResponse = await fetch('/api/master-data/countries');
@@ -40,14 +39,14 @@ export default function PersonalInformation() {
       setCountries(countriesData);
 
       // If there's a selected country, fetch its states
-      if (formState.curr_country) {
-        const statesResponse = await fetch(`/api/master-data/states?countryId=${formState.curr_country}`);
+      if (formData.curr_country) {
+        const statesResponse = await fetch(`/api/master-data/states?countryId=${formData.curr_country}`);
         const statesData = await statesResponse.json();
         setStates(statesData);
 
         // If there's a selected state, fetch its cities
-        if (formState.state) {
-          const citiesResponse = await fetch(`/api/master-data/cities?stateId=${formState.state}`);
+        if (formData.state) {
+          const citiesResponse = await fetch(`/api/master-data/cities?stateId=${formData.state}`);
           const citiesData = await citiesResponse.json();
           setCities(citiesData);
         }
@@ -60,7 +59,7 @@ export default function PersonalInformation() {
         variant: "destructive"
       });
     }
-  };
+  }, [formData.curr_country, formData.state, toast]);
 
   // Check authentication and load data
   useEffect(() => {
@@ -76,15 +75,6 @@ export default function PersonalInformation() {
         try {
           setLoading(true);
           setError(null);
-          console.log("PersonalInfo - Fetching form data");
-          const data = await fetchFormData();
-          
-          if (isActive) {
-            console.log("PersonalInfo - Setting form data");
-            setFormState(data ?? {});
-            await fetchMasterData(); // Fetch master data after form data is loaded
-            setLoading(false);
-          }
         } catch (error) {
           console.error('Error loading form data:', error);
           if (isActive) {
@@ -96,6 +86,10 @@ export default function PersonalInformation() {
               variant: "destructive"
             });
           }
+        } finally {
+          if (isActive) {
+            setLoading(false);
+          }
         }
       }
     };
@@ -105,15 +99,15 @@ export default function PersonalInformation() {
     return () => {
       isActive = false;
     };
-  }, [status, router, fetchFormData, toast]);
+  }, [status, router, toast]);
+  
+  // Load master data when formData changes
+  useEffect(() => {
+    fetchMasterData();
+  }, [fetchMasterData]);
 
   // Handle select changes with data fetching
   const handleSelectChange = async (value: string, name: string) => {
-    setFormState((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-    
     try {
       // Handle dependent dropdowns
       if (name === 'curr_country') {
@@ -124,12 +118,11 @@ export default function PersonalInformation() {
         setCities([]); // Reset cities when country changes
         
         // Reset state and city in form
-        setFormState((prev) => ({
-          ...prev,
+        updateFormData({
           curr_country: value,
           state: '',
           city: ''
-        }));
+        });
       } else if (name === 'state') {
         // When state changes, fetch cities for that state
         const citiesResponse = await fetch(`/api/master-data/cities?stateId=${value}`);
@@ -137,11 +130,14 @@ export default function PersonalInformation() {
         setCities(citiesData);
         
         // Reset city in form
-        setFormState((prev) => ({
-          ...prev,
+        updateFormData({
           state: value,
           city: ''
-        }));
+        });
+      } else {
+        updateFormData({
+          [name]: value
+        });
       }
     } catch (error) {
       console.error('Error fetching dependent data:', error);
@@ -156,18 +152,16 @@ export default function PersonalInformation() {
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormState((prev) => ({
-      ...prev,
+    updateFormData({
       [name]: value
-    }));
+    });
   };
   
   // Handle radio button changes
   const handleRadioChange = (name: string, value: string) => {
-    setFormState((prev) => ({
-      ...prev,
+    updateFormData({
       [name]: value
-    }));
+    });
   };
   
   // Validate form
@@ -183,7 +177,7 @@ export default function PersonalInformation() {
     ];
     
     for (const field of requiredFields) {
-      if (!formState[field as keyof Partial<ICoreModelOnboardform>]) {
+      if (!formData[field as keyof Partial<ICoreModelOnboardform>]) {
         toast({
           title: "Validation Error",
           description: `Please fill in all required fields.`,
@@ -203,13 +197,19 @@ export default function PersonalInformation() {
     if (!validateForm()) return;
 
     try {
-      await saveFormData(formState);
-      router.push('/preferences');
+      const success = await saveStep('personal-information');
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Personal information saved successfully."
+        });
+        router.push('/current-status');
+      }
     } catch (error) {
-      console.error('Error saving form:', error);
+      console.error('Error saving form data:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to save form. Please try again.',
+        title: "Error",
+        description: "Failed to save your information. Please try again.",
         variant: "destructive"
       });
     }
@@ -264,7 +264,7 @@ export default function PersonalInformation() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Identification Type</Label>
                   <RadioGroup
-                    value={formState.id_type?.toString() ?? ''}
+                    value={formData.id_type?.toString() ?? ''}
                     onValueChange={(value) => handleRadioChange('id_type', value)}
                     className="flex space-x-4"
                   >
@@ -282,12 +282,12 @@ export default function PersonalInformation() {
                 {/* ID Number */}
                 <div className="space-y-2">
                   <Label className="text-base font-medium">
-                    {formState.id_type === 1 ? 'IC Number' : 'Passport Number'}
+                    {formData.id_type === 1 ? 'IC Number' : 'Passport Number'}
                   </Label>
                   <Input
                     type="text"
                     name="id_number"
-                    value={formState.id_number ?? ''}
+                    value={formData.id_number ?? ''}
                     onChange={handleInputChange}
                     placeholder="Enter your identification number"
                     className="max-w-xs"
@@ -301,7 +301,7 @@ export default function PersonalInformation() {
                   <Input
                     type="text"
                     name="display_name"
-                    value={formState.display_name ?? ''}
+                    value={formData.display_name ?? ''}
                     onChange={handleInputChange}
                     placeholder="Enter your full name"
                     required
@@ -312,7 +312,7 @@ export default function PersonalInformation() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Gender</Label>
                   <RadioGroup
-                    value={formState.gender ?? ''}
+                    value={formData.gender ?? ''}
                     onValueChange={(value) => handleRadioChange('gender', value)}
                     className="flex space-x-4"
                   >
@@ -335,7 +335,7 @@ export default function PersonalInformation() {
                     <Input
                       type="date"
                       name="dob"
-                      value={formState.dob ?? ''}
+                      value={formData.dob ?? ''}
                       onChange={handleInputChange}
                       className="pl-10"
                       required
@@ -362,7 +362,7 @@ export default function PersonalInformation() {
                     <Input
                       type="tel"
                       name="mob_number"
-                      value={formState.mob_number ?? ''}
+                      value={formData.mob_number ?? ''}
                       onChange={handleInputChange}
                       placeholder="Enter your phone number"
                       className="pl-10"
@@ -375,7 +375,7 @@ export default function PersonalInformation() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Nationality</Label>
                   <Select
-                    value={formState.nationality?.toString() ?? ''}
+                    value={formData.nationality?.toString() ?? ''}
                     onValueChange={(value) => handleRadioChange('nationality', value)}
                   >
                     <SelectTrigger className="w-full">
@@ -395,7 +395,7 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">Current Country</Label>
                   <Select
-                    value={formState.curr_country?.toString() ?? ''}
+                    value={formData.curr_country?.toString() ?? ''}
                     onValueChange={(value) => handleSelectChange(value, 'curr_country')}
                   >
                     <SelectTrigger className="w-full">
@@ -415,9 +415,9 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">State</Label>
                   <Select
-                    value={formState.state?.toString() ?? ''}
+                    value={formData.state?.toString() ?? ''}
                     onValueChange={(value) => handleSelectChange(value, 'state')}
-                    disabled={!formState.curr_country}
+                    disabled={!formData.curr_country}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue defaultValue="" placeholder="Select your state" />
@@ -436,9 +436,9 @@ export default function PersonalInformation() {
                 <div className="space-y-2">
                   <Label className="text-base font-medium">City</Label>
                   <Select
-                    value={formState.city?.toString() ?? ''}
+                    value={formData.city?.toString() ?? ''}
                     onValueChange={(value) => handleSelectChange(value, 'city')}
-                    disabled={!formState.state}
+                    disabled={!formData.state}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue defaultValue="" placeholder="Select your city" />
@@ -459,7 +459,7 @@ export default function PersonalInformation() {
                   <Input
                     type="text"
                     name="postalcode"
-                    value={formState.postalcode ?? ''}
+                    value={formData.postalcode ?? ''}
                     onChange={handleInputChange}
                     placeholder="Enter your postal code"
                     className="max-w-xs"
@@ -479,8 +479,8 @@ export default function PersonalInformation() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Are you registered with Department of Social Welfare Malaysia as a person with Disabilities (OKU)?</Label>
                 <RadioGroup
-                  value={formState.disability_status?.toString() ?? '0'}
-                  onValueChange={(value) => setFormState(prev => ({ ...prev, disability_status: parseInt(value) }))}
+                  value={formData.disability_status?.toString() ?? '0'}
+                  onValueChange={(value) => handleRadioChange('disability_status', value)}
                   className="flex space-x-4"
                 >
                   <div className="flex items-center space-x-2">
