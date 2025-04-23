@@ -178,6 +178,7 @@ export default function Overview() {
       };
 
       // Submit to API
+      console.log('Submitting form data:', submissionData);
       const response = await fetch("/api/onboard-form/submit", {
         method: "POST",
         headers: {
@@ -186,12 +187,14 @@ export default function Overview() {
         body: JSON.stringify(submissionData),
       });
 
+      const responseData = await response.json();
+      console.log('API Response:', responseData);
+
       if (response.ok) {
         router.push("/success");
       } else {
-        const errorData = await response.json();
-        console.error("Failed to submit form:", errorData);
-        throw new Error(errorData.message ?? 'Failed to submit form');
+        console.error("Failed to submit form:", responseData);
+        throw new Error(responseData.message ?? 'Failed to submit form');
       }
     } catch (error) {
       console.error("Error submitting form:", error);

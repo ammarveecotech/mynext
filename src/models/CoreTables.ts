@@ -241,7 +241,7 @@ const CoreModelOnboardformSchema: Schema = new Schema(
     user_id: { type: Buffer }
   },
   { 
-    collection: 'core_onboardform'
+    collection: 'core_model_onboardform'
   }
 );
 
@@ -250,4 +250,4 @@ export const CoreModelUserProfile = mongoose.models.CoreModelUserProfile as Mode
   mongoose.model<ICoreModelUserProfile>('CoreModelUserProfile', CoreModelUserProfileSchema, 'core_user_profile');
 
 export const CoreModelOnboardform = mongoose.models.CoreModelOnboardform as Model<ICoreModelOnboardform> || 
-  mongoose.model<ICoreModelOnboardform>('CoreModelOnboardform', CoreModelOnboardformSchema, 'core_onboardform');
+  mongoose.model<ICoreModelOnboardform>('CoreModelOnboardform', CoreModelOnboardformSchema, 'core_model_onboardform');

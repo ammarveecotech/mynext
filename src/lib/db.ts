@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mynext_db';
+// Use the same connection string that works with the MCP tools
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/talent_db';
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
@@ -14,6 +15,7 @@ let cached: {
 
 async function dbConnect() {
   if (cached.conn) {
+    console.log('Using cached database connection');
     return cached.conn;
   }
 
@@ -22,7 +24,9 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => {
+    console.log('Creating new database connection...');
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('Successfully connected to MongoDB');
       return mongoose;
     });
   }
@@ -31,6 +35,7 @@ async function dbConnect() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
+    console.error('Failed to connect to MongoDB:', e);
     throw e;
   }
 
